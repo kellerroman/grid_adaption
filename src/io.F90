@@ -5,6 +5,7 @@ contains
    SUBROUTINE INPUT(IS_PARALLEL)
    USE MOD_GLOBAL
    USE CONST
+   use grid, only: calc_schwerpunkte, str2unstr
    IMPLICIT NONE
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !

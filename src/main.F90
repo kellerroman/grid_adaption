@@ -3,10 +3,10 @@
 !!
 !! AUTHOR:           ROMAN KELLER
 !! START:            19.09.2013
-!! LAST CHANGE:      03.04.2014
+!! LAST CHANGE:      27.01.2015
 !!
 !! CHANGELOG:
-!!
+!!          27.01.201,RK: Added to GITHUB, new file structure
 !!
 !!
 !! TODO:    CONTROL-INPUTFILE
@@ -19,6 +19,7 @@
 program grid_adaption
    use mod_global
    use io
+   use grid
    implicit none
 
 
