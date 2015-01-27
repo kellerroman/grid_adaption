@@ -1,0 +1,7 @@
+EnableContentAssist=true
+EnableDeclView=true
+EnableHoverTip=true
+EnableVPG=true
+FortranIncludePaths=/grid_adaption\n
+FortranModulePaths=/grid_adaption\n
+eclipse.preferences.version=1
