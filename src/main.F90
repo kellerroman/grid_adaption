@@ -18,6 +18,7 @@
 
 program grid_adaption
    use mod_global
+   use io
    implicit none
 
 
