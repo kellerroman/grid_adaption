@@ -1,0 +1,196 @@
+program sol2para
+!< Dieses Tool erstellt eine Paraview-Plot-Datei aus einer
+!< Lösungsdatei.
+!< AUTHOR: Roman Keller
+!< START:  31.12.2014
+!< LAST:   31.12.2014
+
+IMPLICIT NONE
+
+TYPE :: T_BLOCK
+    INTEGER                     :: NI, NJ, NK
+!< ANZAHL DER ZELLEN
+    INTEGER                     :: NI2, NJ2, NK2
+!< ANZAHL DER KNOTENPUNKTE
+    REAL(KIND=8), ALLOCATABLE   :: T (:,:,:)
+!< ZELLMITTELWERTE
+!< PARA1: I KOORDINATE (NI)
+!< PARA2: J KOORDINATE (NJ)
+!< PARA3: K KOORDINATE (NK)
+
+    REAL(KIND=8), ALLOCATABLE   :: XYZ   (:,:,:,:)
+!< COORDINATEN DER KNOTENPUNKTE (E)
+!< PARA1: I KOORDINATE (NI2)
+!< PARA2: J KOORDINATE (NJ2)
+!< PARA3: K KOORDINATE (NK2)
+!< PARA4: DIMENSION (DIM)
+END TYPE T_BLOCK
+
+
+CHARACTER(LEN=*), PARAMETER :: SOL_FILE   = "sol.ufo.bin"
+CHARACTER(LEN=*), PARAMETER :: GRID_FILE  = "git.bin"
+CHARACTER(LEN=*), PARAMETER :: PLOT_FILE   = "sol.vtk"
+INTEGER, PARAMETER :: IO_GRID   = 16
+INTEGER, PARAMETER :: IO_SOL     = 17
+INTEGER, PARAMETER :: IO_PLOT    = 18
+INTEGER :: IO_FILE_VERSION, DIMENSION_SOL, NBLOCK_SOL
+
+INTEGER :: DIMENSION_GRID, NBLOCK_GRID
+
+INTEGER :: NBLOCK,NVAR
+
+INTEGER :: NITER
+REAL(KIND=8) :: MAX_RES,AVG_RES
+
+TYPE(T_BLOCK), ALLOCATABLE :: BLOCK (:)
+
+CHARACTER(LEN=3) :: BlockNr
+
+INTEGER :: B,I,J,K,N
+
+INTEGER::argc,COMMAND_ARGUMENT_COUNT
+
+CHARACTER(LEN=4)::arg
+
+LOGICAL :: SOL_OUT = .TRUE.
+
+! Behandlung von Programmparametern
+argc=command_argument_count()
+
+DO I=1,argc
+   CALL GET_COMMAND_ARGUMENT(I,arg)
+   SELECT CASE (TRIM(arg))
+      CASE("-git")
+         SOL_OUT = .FALSE.
+      CASE DEFAULT
+         WRITE(*,*) "KOMMANDOZEILENARGUMENT NICHT VERSTANDEN"
+   END SELECT
+END DO
+
+
+
+
+OPEN(IO_GRID,FILE=TRIM(GRID_FILE),FORM="UNFORMATTED",access="STREAM",STATUS="OLD")
+
+READ(IO_GRID) DIMENSION_GRID,NBLOCK_GRID
+
+IF (DIMENSION_GRID == 2) THEN
+   DIMENSION_GRID = 3
+   WRITE(*,*) "3D CASE"
+ELSE
+   DIMENSION_GRID = 2
+   WRITE(*,*) "2D CASE"
+END IF
+
+IF (.NOT.SOL_OUT) THEN
+   NBLOCK = NBLOCK_GRID
+   WRITE(*,*) "WRITING GRID ONLY"
+ELSE
+   STOP "SOLUTION FILE OUTPUT NOCH NICHT IMPLEMENTIERT"
+   OPEN(IO_SOL,FILE=TRIM(SOL_FILE),FORM="UNFORMATTED",access="STREAM",STATUS="OLD")
+
+   READ(IO_SOL) IO_FILE_VERSION,DIMENSION_SOL,NBLOCK_SOL,NVAR
+
+   IF (DIMENSION_GRID /= DIMENSION_SOL) THEN
+      WRITE(*,*) "ERROR: DIMENSIONEN STIMMEN NICHT ÜBEREIN"
+      STOP
+   END IF
+
+   IF (NBLOCK_GRID == NBLOCK_SOL ) THEN
+      NBLOCK = NBLOCK_GRID
+   ELSE
+      WRITE(*,*) "ERROR: BLOCKANZAHL STIMMEN NICHT ÜBEREIN"
+      STOP
+   END IF
+END IF
+
+ALLOCATE ( BLOCK(NBLOCK) )
+WRITE(*,'(4(A8))') "BLOCK", "NI","NJ","NK"
+DO B = 1, NBLOCK
+   IF (DIMENSION_GRID == 3) THEN
+      READ(IO_GRID) BLOCK(B) % NI2, BLOCK(B) % NJ2, BLOCK(B) % NK2
+   ELSE
+      READ(IO_GRID) BLOCK(B) % NI2, BLOCK(B) % NJ2
+      BLOCK(B) % NK2 = 1
+   END IF
+
+   IF (SOL_OUT) THEN
+      READ(IO_SOL)  BLOCK(B) % NI,  BLOCK(B) % NJ,  BLOCK(B) % NK
+      ALLOCATE( BLOCK(B) % T(BLOCK(B) % NI,  BLOCK(B) % NJ,  BLOCK(B) % NK))
+   ELSE
+      BLOCK(B) % NI = BLOCK(B) % NI2 -1
+      BLOCK(B) % NJ = MAX(1,BLOCK(B) % NJ2 -1)
+      BLOCK(B) % NK = MAX(1,BLOCK(B) % NK2 -1)
+   END IF
+   WRITE(*,'(4(I8))')  B,BLOCK(B) % NI,  BLOCK(B) % NJ,  BLOCK(B) % NK
+   ALLOCATE( BLOCK(B) % XYZ(BLOCK(B) % NI2,  BLOCK(B) % NJ2,  BLOCK(B) % NK2,3))
+   BLOCK(B) % XYZ = 1.0D0
+   !< Initialisieren der KOORDINATEN um Fehler bei 2D und 1D RECHNUNGEN ZU VERMEIDEN
+END DO
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GIT - DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+DO B = 1,NBLOCK
+   DO K = 1,BLOCK(B) % NK2
+      DO J = 1,BLOCK(B) % NJ2
+         DO I = 1,BLOCK(B) % NI2
+            READ(IO_GRID) (BLOCK(B) % XYZ(I,J,K,N),N=1,DIMENSION_GRID)
+         END DO
+      END DO
+   END DO
+END DO
+CLOSE (IO_GRID)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! GIT - DATA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+IF (SOL_OUT) THEN
+   READ(IO_SOL) NITER,MAX_RES,AVG_RES
+   WRITE(*,*) "ITERATION",NITER,MAX_RES,AVG_RES
+   DO B = 1,NBLOCK
+      READ(IO_SOL) BLOCK(B) % T
+   END DO
+
+   CLOSE (IO_SOL)
+END IF
+
+DO B = 1,NBLOCK
+   WRITE(BlockNr,'(I3.3)') B
+   open(UNIT=IO_PLOT,file="sol"//BlockNr//".vtk")
+   write(IO_PLOT,'(a)') '# vtk DataFile Version 2.0'
+   write(IO_PLOT,'(a)') 'Structured Grid file from RIHC'
+   write(IO_PLOT,'(a)') 'ASCII'
+   write(IO_PLOT,*)
+   write(IO_PLOT,'(a)') 'DATASET STRUCTURED_GRID'
+   write(IO_PLOT,'(a11,3I4)') 'DIMENSIONS ', BLOCK(B) % NI2,BLOCK(B) % NJ2,BLOCK(B) % NK2
+   write(IO_PLOT,*) 'POINTS ',BLOCK(B) % NI2*BLOCK(B) % NJ2*BLOCK(B) % NK2,'double'
+
+   DO K = 1,BLOCK(B) % NK2
+      DO J = 1,BLOCK(B) % NJ2
+         DO I = 1,BLOCK(B) % NI2
+            WRITE(IO_PLOT,*) (BLOCK(B) % XYZ(I,J,K,N),N=1,3)
+         END DO
+      END DO
+   END DO
+
+   IF (SOL_OUT) THEN
+      write(IO_PLOT,"(A,X,I0)") 'CELL_DATA', BLOCK(B) % NI*BLOCK(B) % NJ*BLOCK(B) % NK
+      WRITE(IO_PLOT,"(A)") 'SCALARS TEMPERATUR double'
+      WRITE(IO_PLOT,"(A)") 'LOOKUP_TABLE default'
+      DO K = 1,BLOCK(B) % NK
+          DO J = 1,BLOCK(B) % NJ
+              DO I = 1,BLOCK(B) % NI
+                  WRITE(IO_PLOT,*) BLOCK(B) % T(I,J,K)
+              END DO
+          END DO
+      END DO
+   END IF
+   
+   close(IO_PLOT)
+
+END DO
+
+
+
+
+
+
+
+end program

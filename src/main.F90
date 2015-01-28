@@ -3,13 +3,13 @@
 !!
 !! AUTHOR:           ROMAN KELLER
 !! START:            19.09.2013
-!! LAST CHANGE:      27.01.2015
+!! LAST CHANGE:      28.01.2015
 !!
 !! CHANGELOG:
 !!          27.01.201,RK: Added to GITHUB, new file structure
 !!
 !!
-!! TODO:    CONTROL-INPUTFILE
+!! TODO:
 !!          INTERPOLATION HöHERER ORDNUNG (VERHINDERUNG EINES WERTESPRUNGS BEIM REFERNZPUNKTWECHSEL)
 !!          EINLESEN DER RANDBEINGUNGEN AUS DER ZS
 !!          3D
@@ -23,8 +23,8 @@ program grid_adaption
    implicit none
 
 
-   CHARACTER(LEN=*),PARAMETER :: VERSION = "V0.1.2"
-   CHARACTER(LEN=*),PARAMETER :: LAST_CHANGE = "03.10.2014"
+   CHARACTER(LEN=*),PARAMETER :: VERSION = "V0.1.3"
+   CHARACTER(LEN=*),PARAMETER :: LAST_CHANGE = "28.01.2015"
 
 
    INTEGER :: i
@@ -65,9 +65,10 @@ program grid_adaption
       CALL CALC_SCHIEBESPANNUNG()
 
       CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
-
-      WRITE(*,'(X,I8,X,2(D12.5,X),"@",I0," (",4(I0,X),")")') I,DN_SUM &
+      IF (I < 50 .OR. MOD(I,100) == 0 ) THEN
+         WRITE(*,'(X,I8,X,2(D12.5,X),"@",I0," (",4(I0,X),")")') I,DN_SUM &
                         ,DN_MAX,DN_MAX_POS,UNSTR%PKT_REF(DN_MAX_POS,4),UNSTR%PKT_REF(DN_MAX_POS,1:3)
+      END IF
    end do
 
 !   CALL OUTPUT_1D(i-1)
@@ -85,6 +86,7 @@ program grid_adaption
    END IF
 
    CALL OUTPUT_GRID()
+
    WRITE(*,*) "======================================================" &
              ,"FINISHED"  &
              ,"======================================================"

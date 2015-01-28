@@ -71,9 +71,9 @@ SUBROUTINE WANDVERFEINERUNG()
 !         .OR. (UNSTR % PKT_TYPE (P2) /= 1 ) .AND. UNSTR % PKT_TYPE (P2) /= UNSTR % PKT_TYPE (P1)) THEN
          IF (UNSTR % KNT_DN(U,1) > 1.D-6) THEN
             TEMP = MIN(2.D0,(UNSTR % KNT_DN(U,1)-1.D-6) * 10.D0)
-            WRITE(*,*) P1,UNSTR % KNT_DN(U,1), temp
+!            WRITE(*,*) P1,UNSTR % KNT_DN(U,1), temp
             DO  NK = 1,UNSTR % PKT_NKNT(P1)
-               WRITE(*,*) UNSTR % KNT_SPANNUNG(U,1), UNSTR % PKT_NEIGH(P1,NK)
+!               WRITE(*,*) UNSTR % KNT_SPANNUNG(U,1), UNSTR % PKT_NEIGH(P1,NK)
             END DO
    !         TEMP  = 2.0D0
          END IF

@@ -1,0 +1,21 @@
+FC=gfortran
+
+#CFLAGS  = -Wconversion -Wall -Wextra -fbounds-check
+CFLAGS += -DDEBUG #Unnecessary comments are oppressed
+CFLAGS += -O3
+
+.PHONY: all git2para sol2unstrpara
+
+all: git2para sol2unstrpara sol2para
+git2para: ../bin/git2para 
+sol2unstrpara: ../bin/sol2unstrpara
+sol2para: ../bin/sol2para
+
+../bin/git2para: ../tools/git2paraview.F90
+	$(FC) $(CFLAGS) $< -o $@
+
+../bin/sol2unstrpara: ../tools/sol2unstrpara.F90
+	$(FC) $(CFLAGS) $< -o $@
+	
+../bin/sol2para: ../tools/sol2para.F90
+	$(FC) $(CFLAGS) $< -o $@

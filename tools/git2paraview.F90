@@ -6,15 +6,17 @@ program git2paraview
 
     REAL(KIND=8),ALLOCATABLE :: xyz(:,:,:,:)
 
-    OPEN(10,FILE="git.dat",STATUS="OLD")
-    READ(10,*) NI,NJ
+    OPEN(10,FILE="git.bin",FORM="UNFORMATTED",access="STREAM",STATUS="OLD")
+    !READ(10) AXSYM,NB
+
+    READ(10) NI,NJ
     NK = 1
     allocate(xyz(3,NI,NJ,NK))
 
     DO k = 1, NK
        DO j = 1,NJ
           DO i= 1,NI
-             READ(10,*) XYZ(1,i,j,k),XYZ(2,i,j,k),XYZ(3,i,j,k)
+             READ(10) XYZ(1,i,j,k),XYZ(2,i,j,k),XYZ(3,i,j,k)
           END DO
        END DO
     END DO

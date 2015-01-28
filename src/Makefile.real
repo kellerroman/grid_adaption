@@ -16,7 +16,7 @@ _SOURCES= global.F90 \
 SOURCES = $(patsubst %,$(SOURCE_DIR)/%,$(_SOURCES))
 OBJECTS=$(_SOURCES:.F90=.o)
 
-solver:$(EXECUTABLE) 
+solver: $(EXECUTABLE) 
 
 $(EXECUTABLE):  $(OBJECTS) $(SOURCE_DIR)/main.F90
 	$(FC) $(CFLAGS) $^ -o $@
