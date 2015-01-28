@@ -13,7 +13,7 @@ GRID_ADAPT=$(MAIN_DIR)bin/grid_adapt
 all: gridgen cmp run
 
 cmp:
-	@make -C $(MAIN_DIR)
+	@$(MAKE) -C $(MAIN_DIR)
 
 run:
 	@echo 'Running Grid-Adaper on schraeges Gitter'
@@ -24,9 +24,9 @@ gridgen:
 	
 clean:
 	@rm -vf *.o *.mod *.ufo  *.dat *~ *.plt *.png *.vtk *.txt git_out.bin
-	@make -C gridgen clean
+	@$(MAKE) -C gridgen clean
 
 ##### CLEAN PROJECT
 cp: 
 	@echo "CLEANING SOLVER DIR"
-	@make -C $(MAIN_DIR) clean
+	@m$(MAKE) -C $(MAIN_DIR) clean

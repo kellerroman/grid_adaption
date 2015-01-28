@@ -38,20 +38,69 @@ SUBROUTINE ELLIPTIC_GRID_SMOOTHNING()
    END DO
 
 END SUBROUTINE
+   SUBROUTINE WANDVERFEINERUNG()
+      USE MOD_GLOBAL
+      use BOUNDARY, only: KNT_BOUNDARY, NKNT_BOUNDARY,wall_dist
+      IMPLICIT NONE
 
+!      INTEGER :: U,P1,P2,NK
+      integer :: k, i
 
+      REAL(KIND=8) :: TEMP
 
-SUBROUTINE WANDVERFEINERUNG()
+#ifdef DEBUG
+      IF (GLOBAL%DBG >= 1)  THEN
+         WRITE(*,'(A)') "WANDVERFEINERUNG"
+      END IF
+#endif
+
+      IF (GLOBAL % AXSYM == 2) THEN
+         WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","WANDVERFEINERUNG"
+         STOP
+      END IF
+      do i = 1,NKNT_BOUNDARY
+         k = KNT_BOUNDARY(i)
+         IF (UNSTR % KNT_DN(k,1) > wall_dist) THEN
+            TEMP = MIN(2.D0,(UNSTR % KNT_DN(k,1)-wall_dist) * 10.D0)
+         END IF
+         UNSTR % KNT_SPANNUNG(k,1) = UNSTR % KNT_SPANNUNG(k,1) + TEMP
+      end do
+!      DO U = 1, UNSTR % NKNT
+!         P1 = UNSTR % KNT(U,1)
+!         P2 = UNSTR % KNT(U,2)
+!         TEMP = 0.0D0
+!   !      IF (UNSTR % PKT_TYPE (P1) == 2 .NEQV. UNSTR % PKT_TYPE (P2) == 2) THEN
+!         IF     ((UNSTR % PKT_TYPE (P1) == 2 .AND. UNSTR % PKT_TYPE (P2) /= 2) &
+!            .OR. (UNSTR % PKT_TYPE (P2) == 2 .AND. UNSTR % PKT_TYPE (P1) /= 2)) THEN
+!   !      IF     ((UNSTR % PKT_TYPE (P1) /= 1 ) &
+!   !         .OR. (UNSTR % PKT_TYPE (P2) /= 1 ) .AND. UNSTR % PKT_TYPE (P2) /= UNSTR % PKT_TYPE (P1)) THEN
+!            IF (UNSTR % KNT_DN(U,1) > 1.D-6) THEN
+!               TEMP = MIN(2.D0,(UNSTR % KNT_DN(U,1)-1.D-6) * 10.D0)
+!   !            WRITE(*,*) P1,UNSTR % KNT_DN(U,1), temp
+!               DO  NK = 1,UNSTR % PKT_NKNT(P1)
+!   !               WRITE(*,*) UNSTR % KNT_SPANNUNG(U,1), UNSTR % PKT_NEIGH(P1,NK)
+!               END DO
+!      !         TEMP  = 2.0D0
+!            END IF
+!
+!         END IF
+!         UNSTR % KNT_SPANNUNG(U,1) = UNSTR % KNT_SPANNUNG(U,1) + TEMP! * UNSTR % KNT_DN(U,N+1))
+!      END DO
+!   !   STOP
+   END SUBROUTINE
+
+   SUBROUTINE CELL_INC()
+   !< DIESE ROUTINE SORGT FÜR NICHT ZU GROßE ASPECT RATIOS ZWEITER KANTEN
    USE MOD_GLOBAL
    IMPLICIT NONE
 
-   INTEGER :: U,P1,P2,NK
+   INTEGER :: U,P1,P2
 
    REAL(KIND=8) :: TEMP
 
 #ifdef DEBUG
    IF (GLOBAL%DBG >= 1)  THEN
-      WRITE(*,'(A)') "WANDVERFEINERUNG"
+      WRITE(*,'(A)') "CELL_INC"
    END IF
 #endif
 
@@ -64,55 +113,12 @@ SUBROUTINE WANDVERFEINERUNG()
       P1 = UNSTR % KNT(U,1)
       P2 = UNSTR % KNT(U,2)
       TEMP = 0.0D0
-!      IF (UNSTR % PKT_TYPE (P1) == 2 .NEQV. UNSTR % PKT_TYPE (P2) == 2) THEN
-      IF     ((UNSTR % PKT_TYPE (P1) == 2 .AND. UNSTR % PKT_TYPE (P2) /= 2) &
-         .OR. (UNSTR % PKT_TYPE (P2) == 2 .AND. UNSTR % PKT_TYPE (P1) /= 2)) THEN
-!      IF     ((UNSTR % PKT_TYPE (P1) /= 1 ) &
-!         .OR. (UNSTR % PKT_TYPE (P2) /= 1 ) .AND. UNSTR % PKT_TYPE (P2) /= UNSTR % PKT_TYPE (P1)) THEN
-         IF (UNSTR % KNT_DN(U,1) > 1.D-6) THEN
-            TEMP = MIN(2.D0,(UNSTR % KNT_DN(U,1)-1.D-6) * 10.D0)
-!            WRITE(*,*) P1,UNSTR % KNT_DN(U,1), temp
-            DO  NK = 1,UNSTR % PKT_NKNT(P1)
-!               WRITE(*,*) UNSTR % KNT_SPANNUNG(U,1), UNSTR % PKT_NEIGH(P1,NK)
-            END DO
-   !         TEMP  = 2.0D0
+      IF (UNSTR % PKT_TYPE (P1) == 2 .NEQV. UNSTR % PKT_TYPE (P2) == 2) THEN
+         IF (UNSTR % KNT_DN(U,1) > 1.D-1) THEN
+            TEMP = MIN(10.D0,(UNSTR % KNT_DN(U,1)-1.D-1) * 10)
          END IF
-
       END IF
-      UNSTR % KNT_SPANNUNG(U,1) = UNSTR % KNT_SPANNUNG(U,1) + TEMP! * UNSTR % KNT_DN(U,N+1))
+      UNSTR % KNT_SPANNUNG(U,1) = UNSTR % KNT_SPANNUNG(U,1) + ABS(TEMP)! * UNSTR % KNT_DN(U,N+1))
    END DO
-!   STOP
-END SUBROUTINE
+   END SUBROUTINE
 
-SUBROUTINE CELL_INC()
-!< DIESE ROUTINE SORGT FÜR NICHT ZU GROßE ASPECT RATIOS ZWEITER KANTEN
-USE MOD_GLOBAL
-IMPLICIT NONE
-
-INTEGER :: U,P1,P2
-
-REAL(KIND=8) :: TEMP
-
-#ifdef DEBUG
-IF (GLOBAL%DBG >= 1)  THEN
-   WRITE(*,'(A)') "CELL_INC"
-END IF
-#endif
-
-IF (GLOBAL % AXSYM == 2) THEN
-   WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","WANDVERFEINERUNG"
-   STOP
-END IF
-
-DO U = 1, UNSTR % NKNT
-   P1 = UNSTR % KNT(U,1)
-   P2 = UNSTR % KNT(U,2)
-   TEMP = 0.0D0
-   IF (UNSTR % PKT_TYPE (P1) == 2 .NEQV. UNSTR % PKT_TYPE (P2) == 2) THEN
-      IF (UNSTR % KNT_DN(U,1) > 1.D-1) THEN
-         TEMP = MIN(10.D0,(UNSTR % KNT_DN(U,1)-1.D-1) * 10)
-      END IF
-   END IF
-   UNSTR % KNT_SPANNUNG(U,1) = UNSTR % KNT_SPANNUNG(U,1) + ABS(TEMP)! * UNSTR % KNT_DN(U,N+1))
-END DO
-END SUBROUTINE

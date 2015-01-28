@@ -11,7 +11,8 @@ _SOURCES= global.F90 \
           gradient.F90 \
           resize.F90 \
           grid.F90 \
-          calc_schiebespannung.F90
+          init.F90 \
+          calc_schiebespannung.F90 
 
 SOURCES = $(patsubst %,$(SOURCE_DIR)/%,$(_SOURCES))
 OBJECTS=$(_SOURCES:.F90=.o)
@@ -27,11 +28,15 @@ $(EXECUTABLE):  $(OBJECTS) $(SOURCE_DIR)/main.F90
 global.o: $(SOURCE_DIR)/global.F90
 	$(FC) -c $(CFLAGS) $^ -o $@
 
-io.o: $(SOURCE_DIR)/io.F90 grid.o global.o 
+io.o: $(SOURCE_DIR)/io.F90 grid.o global.o
 	$(FC) -c $(CFLAGS) $< -o $@
 	
 grid.o:	$(SOURCE_DIR)/grid.F90 global.o
 	$(FC) -c $(CFLAGS) $< -o $@
+
+init.o:	$(SOURCE_DIR)/init.F90 global.o grid.o
+	$(FC) -c $(CFLAGS) $< -o $@	
+	
 .PHONY: clean solver
 
 clean:

@@ -11,15 +11,14 @@
 !!
 !! TODO:
 !!          INTERPOLATION HöHERER ORDNUNG (VERHINDERUNG EINES WERTESPRUNGS BEIM REFERNZPUNKTWECHSEL)
-!!          EINLESEN DER RANDBEINGUNGEN AUS DER ZS
 !!          3D
-!!          Mehrere Blöcke
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program grid_adaption
    use mod_global
    use io
    use grid
+   use init_mod, only: init
    implicit none
 
 
@@ -40,37 +39,39 @@ program grid_adaption
 
    CALL INPUT(.FALSE.)
 
+   CALL INIT()
+
    IF (Global % NITER == 0) THEN
       CALL CALC_GRID()
    ELSE
       WRITE(*,'(A9,X,2(A12,x),A)') "ITERATION","RES_SUM","RES_MAX","@(B,I,J,K)"
-   END IF
 
-   do i = 1, Global % NITER
 
-      CALL CALC_GRID()
+      MAIN_LOOP: do i = 1, Global % NITER
 
-      IF (GLOBAL % OUTPUT_ANIMATION > 0 ) THEN
-         IF ( MOD(I-1,GLOBAL % OUTPUT_ANIMATION) == 0 ) THEN
-!         CALL OUTPUT_1D(i-1)
-            IF (GLOBAL % OUTPUT_TYPE == 0) THEN
-               CALL PARAVIEW_OUTPUT_UNSTR(I-1)
-            ELSE
-               CALL UNSTR2STR()
-               CALL WRITE_TECPLOT_ANI(i-1)
+         CALL CALC_GRID()
+
+         IF (GLOBAL % OUTPUT_ANIMATION > 0 ) THEN
+            IF ( MOD(I-1,GLOBAL % OUTPUT_ANIMATION) == 0 ) THEN
+   !         CALL OUTPUT_1D(i-1)
+               IF (GLOBAL % OUTPUT_TYPE == 0) THEN
+                  CALL PARAVIEW_OUTPUT_UNSTR(I-1)
+               ELSE
+                  CALL UNSTR2STR()
+                  CALL WRITE_TECPLOT_ANI(I-1)
+               END IF
             END IF
          END IF
-      END IF
 
-      CALL CALC_SCHIEBESPANNUNG()
+         CALL CALC_SCHIEBESPANNUNG()
 
-      CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
-      IF (I < 50 .OR. MOD(I,100) == 0 ) THEN
-         WRITE(*,'(X,I8,X,2(D12.5,X),"@",I0," (",4(I0,X),")")') I,DN_SUM &
-                        ,DN_MAX,DN_MAX_POS,UNSTR%PKT_REF(DN_MAX_POS,4),UNSTR%PKT_REF(DN_MAX_POS,1:3)
-      END IF
-   end do
-
+         CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
+         IF (I < 50 .OR. MOD(I,100) == 0 ) THEN
+            WRITE(*,'(X,I8,X,2(D12.5,X),"@",I0," (",4(I0,X),")")') I,DN_SUM &
+                           ,DN_MAX,DN_MAX_POS,UNSTR%PKT_REF(DN_MAX_POS,4),UNSTR%PKT_REF(DN_MAX_POS,1:3)
+         END IF
+      end do MAIN_LOOP
+   END IF
 !   CALL OUTPUT_1D(i-1)
    IF (GLOBAL % OUTPUT_TYPE == 0) THEN
       CALL PARAVIEW_OUTPUT_UNSTR (-1)

@@ -5,7 +5,6 @@ contains
    SUBROUTINE INPUT(IS_PARALLEL)
    USE MOD_GLOBAL
    USE CONST
-   use grid, only: calc_schwerpunkte, str2unstr
    IMPLICIT NONE
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !
@@ -13,13 +12,8 @@ contains
    !
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    LOGICAL :: IS_PARALLEL                                                  ! DEFINES IF THE INPUT IS PARALLEL (NUMBERS APPENDED TO FILES)
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !
-   !                             LOCALE VARIABLEN
-   !
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   INTEGER :: NUMBER_OF_FACES,B,F
-   CHARACTER(LEN = 1) , PARAMETER :: FACES(6) = (/"W","E","S","N","B","F"/)
+
+
 #ifdef DEBUG
       IF (GLOBAL%DBG == 1)  THEN
          WRITE(*,*) "======================================================" &
@@ -37,34 +31,8 @@ contains
       END IF
 
       IF (GLOBAL % DO_WALL_REFINEMENT == 1) THEN
-         CALL INPUT_RANDBED()
+         CALL INPUT_RANDBED() !EINLESEN DER RANDBEDINGUNGEN
       END IF
-
-      IF (GLOBAL % AXSYM == 2) THEN
-         NUMBER_OF_FACES = 6
-      ELSE
-         NUMBER_OF_FACES = 4
-      END IF
-
-      WRITE(*,'(4(A5,X),6(A2,X))') "BLOCK","NCI","NCJ","NCK",FACES(1:NUMBER_OF_FACES)
-      DO B = 1,GLOBAL % NBLOCK  ! LOOP OVER ALL BLOCKS
-         WRITE(*,'(4(I5,X))',ADVANCE="NO") B, BLOCKS(B) % NCI, BLOCKS(B) % NCJ, BLOCKS(B) % NCK
-         DO F = 1, NUMBER_OF_FACES
-            IF (BLOCKS(B) % BLOCK_CONNECTION(F,1) > 0) THEN
-               WRITE(*,'(I2,X)',ADVANCE="NO") BLOCKS(B) % BLOCK_CONNECTION(F,1)
-            ELSE IF (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) THEN
-               WRITE(*,'(A2,X)',ADVANCE="NO") "W"
-            ELSE
-               WRITE(*,'(A2,X)',ADVANCE="NO") "-"
-            END IF
-         END DO
-         WRITE(*,*)
-      END DO
-
-
-      CALL CALC_SCHWERPUNKTE()
-
-      CALL STR2UNSTR()
 
 #ifdef DEBUG
       IF (GLOBAL%DBG == 1)  THEN
@@ -583,7 +551,7 @@ contains
    !WRITE(*,'(4(A5,X),6(A2,X))') "BLOCK","NCI","NCJ","NCK",FACES(1:NUMBER_OF_FACES)
    DO B = 1,GLOBAL % NBLOCK  ! LOOP OVER ALL BLOCKS
    !   WRITE(*,'(4(I5,X))',ADVANCE="NO") B, BLOCKS(B) % NCI, BLOCKS(B) % NCJ, BLOCKS(B) % NCK
-      BLOCKS(B) % BLOCK_CONNECTION = -1
+      BLOCKS(B) % BLOCK_CONNECTION = -1000
       DO F = 1, NUMBER_OF_FACES
          DO BB = 1,GLOBAL % NBLOCK! LOOP OVER ALL BLOCK AGAIN
             FOUND = .FALSE.
@@ -638,9 +606,11 @@ contains
    DEALLOCATE( PERM)
 
    END SUBROUTINE
+
    SUBROUTINE INPUT_RANDBED()
    USE MOD_GLOBAL
    USE CONST
+   use boundary, only: wall_dist
    IMPLICIT NONE
 
    CHARACTER(LEN= 1000) :: LINE
@@ -667,7 +637,7 @@ contains
       STOP
    END IF
    OPEN(IO_CF,FILE=TRIM(GLOBAL % RANDBED_IN),STATUS="OLD")
-   ZUSTAND = 0
+   ZUSTAND = -1000
    DO
       READ(IO_CF,'(A1000)',IOSTAT = ISTAT) LINE
       IF (ISTAT < 0 ) THEN
@@ -688,15 +658,15 @@ contains
 
       SELECT CASE(TRIM(ADJUSTL(LINE)))
       CASE ("wall")
-         zustand = 1
-      CASE ("inflow")
-         zustand = 2
+         zustand = 0
       CASE ("sym")
-         zustand = 3
+         zustand = -1
+      CASE ("inflow")
+         zustand = -2
       CASE ("outflow")
-         zustand = 4
+         zustand = -3
       CASE ("slipwall")
-         zustand = 5
+         zustand = -4
       CASE DEFAULT
          POS = INDEX(LINE,"=")
          IF (POS > 0) THEN   !  VARIABLEN DEFINITION
@@ -704,7 +674,8 @@ contains
             VARVALUE = TRIM(ADJUSTL(LINE(POS+1:)))
             SELECT CASE ( TRIM(VARNAME) )
             CASE ("wall_dist")
-
+               READ(VARVALUE,*) WALL_DIST
+               WRITE(*,*) wall_dist
             CASE DEFAULT
                WRITE(*,*) "VARIABLE NICHT ERkANNT:",TRIM(VARNAME)
                STOP
@@ -737,33 +708,33 @@ contains
                      SELECT CASE (TRIM(BLOCK_PHASE))
                      CASE("n")
                         BLOCK_PHASE = "NORTH"
-                        IF (zustand == 1) THEN
-                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(4,1) = 0
+                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(4,1) = zustand
+                        IF (zustand == 0) THEN
                         END IF
                      CASE("s")
                         BLOCK_PHASE = "SOUTH"
-                        IF (zustand == 1) THEN
-                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(3,1) = 0
+                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(3,1) = zustand
+                        IF (zustand == 0) THEN
                         END IF
                      CASE("o")
                         BLOCK_PHASE = "EAST"
-                        IF (zustand == 1) THEN
-                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(2,1) = 0
+                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(2,1) = zustand
+                        IF (zustand == 0) THEN
                         END IF
                      CASE("w")
                         BLOCK_PHASE = "WEST"
-                        IF (zustand == 1) THEN
-                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(1,1) = 0
+                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(1,1) = zustand
+                        IF (zustand == 0) THEN
                         END IF
                      CASE("b")
                         BLOCK_PHASE = "BACK"
-                        IF (zustand == 1) THEN
-                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(5,1) = 0
+                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(5,1) = zustand
+                        IF (zustand == 0) THEN
                         END IF
                      CASE("f")
                         BLOCK_PHASE = "FRONT"
-                        IF (zustand == 1) THEN
-                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(6,1) = 0
+                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(6,1) = zustand
+                        IF (zustand == 0) THEN
                         END IF
                      CASE DEFAULT
                         WRITE(*,*) "FACE NICHT ERKANNT:",TRIM(BLOCK_PHASE)
@@ -781,7 +752,6 @@ contains
 
    END DO
    CLOSE(IO_CF)
-   WRITE(*,*) "RANDBEDINGUNGEN"
    END SUBROUTINE
 
    SUBROUTINE PARAVIEW_OUTPUT()
