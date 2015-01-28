@@ -9,6 +9,7 @@ contains
       use MOD_GLOBAL
       use const, only: dp
       use grid, only: calc_schwerpunkte, str2unstr
+      use wall_refinement, only: init_wall_refinement
       implicit none
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
@@ -56,68 +57,10 @@ contains
       CALL STR2UNSTR()
 
       IF (GLOBAL % DO_WALL_REFINEMENT == 1) THEN
-         CALL INIT_BOUNDARY() !INITIALISIERUNG DER BOUNDARY KNOTEN
+!         CALL INIT_BOUNDARY() !INITIALISIERUNG DER BOUNDARY KNOTEN
+         CALL INIT_WALL_REFINEMENT() !INITIALISIERUNG DER BOUNDARY KNOTEN
       END IF
 
    end subroutine init
 
-   SUBROUTINE INIT_BOUNDARY()
-   ! Diese Routine erstell eine Liste der Knoten die von der Wandverfeinerung betroffen sind
-      use MOD_GLOBAL
-      use BOUNDARY, only: KNT_BOUNDARY, NKNT_BOUNDARY
-      implicit none
-      integer, parameter :: KAW_MAX = 100000
-      integer :: B , F, i, j, k, i2, j2, k2
-      integer :: pkt1
-      integer :: pkt2
-      integer :: kn
-      INTEGER :: NKAW
-      INTEGER :: KAW(KAW_MAX)
-      !< Number Kanten At Wall
-      NKAW = 0
-      block_loop: do B = 1, global % NBLOCK
-         !! WEST BOUNDARY
-         F = 1
-         if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
-            i  = 1
-            i2 = 2
-            k  = 1
-            do j = 1, BLOCKS(B) % NPJ
-               do k = 1, BLOCKS(B) % NPK
-
-                  j2 = j
-                  k2 = k
-                  ! wandpunkt
-                  pkt1 = BLOCKS(b) % assoc(i ,j ,k)
-                  ! wandnaechster punkt
-                  pkt2 = BLOCKS(b) % assoc(i2,j2,k2)
-                  ! schleife über alle Kanten die mit PKT1 verbunden sind
-                  do kn = 1, UNSTR % PKT_NKNT(pkt1)
-                     !WENN KANTE kn von PKT1 mit PKT2 verbunden ist
-                     if (pkt2 == UNSTR % PKT_NEIGH(pkt1,kn)) then
-                        ! KANTE KN von PKT in LISTE AUFNEHMEN
-                        NKAW = NKAW + 1
-                        if (NKAW > KAW_MAX) then
-                           write(*,'(A)') "ERROR in INIT_BOUNDARY"
-                           write(*,'(A,X,I0)') "Number of Edges is larger than the temporary array size:",KAW_MAX
-                           stop
-                        end if
-                        KAW(NKAW) = UNSTR % PKT_KNT(pkt1,kn)
-                     end if
-                  end do
-               end do
-            end do
-         end if
-      end do block_loop
-
-      !ABSPEICHERN DER KANTEN IN DEM ENDGÜLTIGEN ARRAY
-      NKNT_BOUNDARY = nkaw
-
-      allocate(KNT_BOUNDARY(NKNT_BOUNDARY))
-      do i = 1,NKNT_BOUNDARY
-         KNT_BOUNDARY(i) = KAW(i)
-      end do
-!      write(*,*) nkaw
-
-   END SUBROUTINE INIT_BOUNDARY
 end module init_mod

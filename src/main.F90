@@ -19,6 +19,7 @@ program grid_adaption
    use io
    use grid
    use init_mod, only: init
+   use wall_refinement, only: check_wall_refinement
    implicit none
 
 
@@ -66,9 +67,12 @@ program grid_adaption
          CALL CALC_SCHIEBESPANNUNG()
 
          CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
+
+
          IF (I < 50 .OR. MOD(I,100) == 0 ) THEN
             WRITE(*,'(X,I8,X,2(D12.5,X),"@",I0," (",4(I0,X),")")') I,DN_SUM &
                            ,DN_MAX,DN_MAX_POS,UNSTR%PKT_REF(DN_MAX_POS,4),UNSTR%PKT_REF(DN_MAX_POS,1:3)
+            CALL CHECK_WALL_REFINEMENT()
          END IF
       end do MAIN_LOOP
    END IF
