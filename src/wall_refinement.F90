@@ -3,10 +3,13 @@ use const, only: dp
 implicit none
 private
 
-INTEGER, ALLOCATABLE              :: KNT(:)
-INTEGER                           :: NKNT
-REAL(KIND = DP)                   :: WALL_DIST
-REAL(KIND = DP), ALLOCATABLE      :: KNT_FORCE(:)
+INTEGER, ALLOCATABLE,save              :: KNT(:)
+INTEGER,save                           :: NKNT = 0
+REAL(KIND = DP),save                   :: WALL_DIST
+REAL(KIND = DP), ALLOCATABLE,save      :: KNT_FORCE(:)
+LOGICAL,save,public                    :: DO_CHECK = .FALSE.
+REAL(KIND = DP), PARAMETER             :: MAX_INC = 1.001D+0
+REAL(KIND = DP), PARAMETER             :: MIN_INC = 0.995D+0
 
 
 public input_wall_refinement
@@ -34,11 +37,101 @@ contains
          if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
             i  = 1
             i2 = 2
-            k  = 1
             do j = 1, BLOCKS(B) % NPJ
                do k = 1, BLOCKS(B) % NPK
 
                   j2 = j
+                  k2 = k
+                  ! wandpunkt
+                  pkt1 = BLOCKS(b) % assoc(i ,j ,k)
+                  ! wandnaechster punkt
+                  pkt2 = BLOCKS(b) % assoc(i2,j2,k2)
+                  ! schleife über alle Kanten die mit PKT1 verbunden sind
+                  do kn = 1, UNSTR % PKT_NKNT(pkt1)
+                     !WENN KANTE kn von PKT1 mit PKT2 verbunden ist
+                     if (pkt2 == UNSTR % PKT_NEIGH(pkt1,kn)) then
+                        ! KANTE KN von PKT in LISTE AUFNEHMEN
+                        NKAW = NKAW + 1
+                        if (NKAW > KAW_MAX) then
+                           write(*,'(A)') "ERROR in INIT_BOUNDARY"
+                           write(*,'(A,X,I0)') "Number of Edges is larger than the temporary array size:",KAW_MAX
+                           stop
+                        end if
+                        KAW(NKAW) = UNSTR % PKT_KNT(pkt1,kn)
+                     end if
+                  end do
+               end do
+            end do
+         end if
+         !! OST BOUNDARY
+         F = 2
+         if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
+            i  = BLOCKS(B) % NPI
+            i2 = I-1
+            do j = 1, BLOCKS(B) % NPJ
+               do k = 1, BLOCKS(B) % NPK
+
+                  j2 = j
+                  k2 = k
+                  ! wandpunkt
+                  pkt1 = BLOCKS(b) % assoc(i ,j ,k)
+                  ! wandnaechster punkt
+                  pkt2 = BLOCKS(b) % assoc(i2,j2,k2)
+                  ! schleife über alle Kanten die mit PKT1 verbunden sind
+                  do kn = 1, UNSTR % PKT_NKNT(pkt1)
+                     !WENN KANTE kn von PKT1 mit PKT2 verbunden ist
+                     if (pkt2 == UNSTR % PKT_NEIGH(pkt1,kn)) then
+                        ! KANTE KN von PKT in LISTE AUFNEHMEN
+                        NKAW = NKAW + 1
+                        if (NKAW > KAW_MAX) then
+                           write(*,'(A)') "ERROR in INIT_BOUNDARY"
+                           write(*,'(A,X,I0)') "Number of Edges is larger than the temporary array size:",KAW_MAX
+                           stop
+                        end if
+                        KAW(NKAW) = UNSTR % PKT_KNT(pkt1,kn)
+                     end if
+                  end do
+               end do
+            end do
+         end if
+         !! SUED BOUNDARY
+         F = 3
+         if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
+            j  = 1
+            j2 = j+1
+            do i = 1, BLOCKS(B) % NPI
+               do k = 1, BLOCKS(B) % NPK
+                  i2 = I
+                  k2 = k
+                  ! wandpunkt
+                  pkt1 = BLOCKS(b) % assoc(i ,j ,k)
+                  ! wandnaechster punkt
+                  pkt2 = BLOCKS(b) % assoc(i2,j2,k2)
+                  ! schleife über alle Kanten die mit PKT1 verbunden sind
+                  do kn = 1, UNSTR % PKT_NKNT(pkt1)
+                     !WENN KANTE kn von PKT1 mit PKT2 verbunden ist
+                     if (pkt2 == UNSTR % PKT_NEIGH(pkt1,kn)) then
+                        ! KANTE KN von PKT in LISTE AUFNEHMEN
+                        NKAW = NKAW + 1
+                        if (NKAW > KAW_MAX) then
+                           write(*,'(A)') "ERROR in INIT_BOUNDARY"
+                           write(*,'(A,X,I0)') "Number of Edges is larger than the temporary array size:",KAW_MAX
+                           stop
+                        end if
+                        KAW(NKAW) = UNSTR % PKT_KNT(pkt1,kn)
+                     end if
+                  end do
+               end do
+            end do
+         end if
+         !! NORD BOUNDARY
+         F = 4
+         if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
+            j  = BLOCKS(B) % NPJ
+            j2 = j-1
+            do i = 1, BLOCKS(B) % NPI
+               do k = 1, BLOCKS(B) % NPK
+                  i2 = I
                   k2 = k
                   ! wandpunkt
                   pkt1 = BLOCKS(b) % assoc(i ,j ,k)
@@ -70,7 +163,7 @@ contains
 
       allocate(KNT_FORCE(NKNT))
 
-      KNT_FORCE = 1.0D0
+      KNT_FORCE = 1.0D-5
       do i = 1,NKNT
          KNT(i) = KAW(i)
       end do
@@ -179,34 +272,64 @@ contains
                      SELECT CASE (TRIM(BLOCK_PHASE))
                      CASE("n")
                         BLOCK_PHASE = "NORTH"
-                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(4,1) = zustand
-                        IF (zustand == 0) THEN
-                        END IF
+                        if (BLOCKS(iBLOCK) % BLOCK_CONNECTION(4,1) == -1000) then
+                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(4,1) = zustand
+                           IF (zustand == 0) THEN
+                           END IF
+                        else
+                           write(*,'(A)') "Warning in input_wall_refinement"
+                           write(*,'(A,X,I0,X,A)') "NORTH SIDE OF BLOCK",iBlock,"is already defined"
+                        end if
                      CASE("s")
                         BLOCK_PHASE = "SOUTH"
-                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(3,1) = zustand
-                        IF (zustand == 0) THEN
-                        END IF
+                        if (BLOCKS(iBLOCK) % BLOCK_CONNECTION(3,1) == -1000) then
+                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(3,1) = zustand
+                           IF (zustand == 0) THEN
+                           END IF
+                        else
+                           write(*,'(A)') "Warning in input_wall_refinement"
+                           write(*,'(A,X,I0,X,A)') "NORTH SIDE OF BLOCK",iBlock,"is already defined"
+                        end if
                      CASE("o")
                         BLOCK_PHASE = "EAST"
-                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(2,1) = zustand
-                        IF (zustand == 0) THEN
-                        END IF
+                        if (BLOCKS(iBLOCK) % BLOCK_CONNECTION(2,1) == -1000) then
+                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(2,1) = zustand
+                           IF (zustand == 0) THEN
+                           END IF
+                        else
+                           write(*,'(A)') "Warning in input_wall_refinement"
+                           write(*,'(A,X,I0,X,A)') "NORTH SIDE OF BLOCK",iBlock,"is already defined"
+                        end if
                      CASE("w")
                         BLOCK_PHASE = "WEST"
-                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(1,1) = zustand
-                        IF (zustand == 0) THEN
-                        END IF
+                        if (BLOCKS(iBLOCK) % BLOCK_CONNECTION(1,1) == -1000) then
+                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(1,1) = zustand
+                           IF (zustand == 0) THEN
+                           END IF
+                        else
+                           write(*,'(A)') "Warning in input_wall_refinement"
+                           write(*,'(A,X,I0,X,A)') "NORTH SIDE OF BLOCK",iBlock,"is already defined"
+                        end if
                      CASE("b")
                         BLOCK_PHASE = "BACK"
-                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(5,1) = zustand
-                        IF (zustand == 0) THEN
-                        END IF
+                        if (BLOCKS(iBLOCK) % BLOCK_CONNECTION(5,1) == -1000) then
+                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(5,1) = zustand
+                           IF (zustand == 0) THEN
+                           END IF
+                        else
+                           write(*,'(A)') "Warning in input_wall_refinement"
+                           write(*,'(A,X,I0,X,A)') "NORTH SIDE OF BLOCK",iBlock,"is already defined"
+                        end if
                      CASE("f")
                         BLOCK_PHASE = "FRONT"
-                        BLOCKS(iBLOCK) % BLOCK_CONNECTION(6,1) = zustand
-                        IF (zustand == 0) THEN
-                        END IF
+                        if (BLOCKS(iBLOCK) % BLOCK_CONNECTION(6,1) == -1000) then
+                           BLOCKS(iBLOCK) % BLOCK_CONNECTION(6,1) = zustand
+                           IF (zustand == 0) THEN
+                           END IF
+                        else
+                           write(*,'(A)') "Warning in input_wall_refinement"
+                           write(*,'(A,X,I0,X,A)') "NORTH SIDE OF BLOCK",iBlock,"is already defined"
+                        end if
                      CASE DEFAULT
                         WRITE(*,*) "FACE NICHT ERKANNT:",TRIM(BLOCK_PHASE)
                         STOP
@@ -249,9 +372,9 @@ contains
 
          TEMP = UNSTR % KNT_DN(k,1) / wall_dist
 
-         TEMP = MIN(1.1D+0, TEMP)
+         TEMP = MIN(MAX_INC, TEMP)
 
-         TEMP = MAX(5.0D-1, TEMP)
+         TEMP = MAX(MIN_INC, TEMP)
 
          KNT_FORCE(i) = KNT_FORCE(i) * TEMP
 
@@ -263,10 +386,11 @@ contains
    use mod_global, only: unstr
    implicit none
    integer :: i,k
-   do i = 1, NKNT
-      k = KNT(i)
-      write(*,*) UNSTR % KNT_DN(k,1), KNT_FORCE(i)
-   end do
-
+   if (do_check) then
+      do i = 1, NKNT
+         k = KNT(i)
+         write(*,*) UNSTR % KNT_DN(k,1), KNT_FORCE(i)
+      end do
+   end if
    end subroutine check_wall_refinement
 end module wall_refinement
