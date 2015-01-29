@@ -1,13 +1,16 @@
+FC=gfortran
 
-run: gridgen.F90
-	gfortran gridgen.F90 -o gridgen
+#CFLAGS  = -Wconversion -Wall -Wextra -fbounds-check
+CFLAGS += -O3
+.PHONY: run gridgen clean
+
+
+run: gridgen
 	./gridgen
-	~/daten/Promotion/TOOLS/bin/git_ascii2bin
-
-
-
-all:
-	gridgen file
+	
+gridgen: gridgen.F90
+	@$(FC) $(CFLAGS) $< -o $@
+#	~/daten/Promotion/TOOLS/bin/git_ascii2bin
 
 clean:
 	rm -f *.vtk *.bin *.dat *.pyc gridgen

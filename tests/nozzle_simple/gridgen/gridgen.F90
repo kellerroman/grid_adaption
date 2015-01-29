@@ -1,34 +1,28 @@
-program gridgen_o_grid
+program gridgen_nozzle_simple
 implicit none
 INTEGER, PARAMETER :: NI = 10
 INTEGER, PARAMETER :: NJ = 10
 INTEGER, PARAMETER :: FU = 666
-INTEGER, PARAMETER :: NB = 3
-INTEGER, PARAMETER :: AXSYM = 0
 REAL(KIND = 8), PARAMETER :: Pi = 3.1415927/180.D0
 REAL(KIND = 8), PARAMETER :: RADIUS = 10.0D0
 
 INTEGER :: I ,J
 REAL(KIND = 8) :: spktx,spkty,epkty,epktx,lx,ly, winkel
-WRITE(*,*) "GRIDGEN FÜR EIN EINFACHES O_GRID 28.01.2015"
+WRITE(*,*) "GRIDGEN FÜR EIN EINFACHES O_GRID 08.10.2014"
 
-OPEN(FU,FILE="git.bin",FORM="UNFORMATTED",access="STREAM",STATUS="replace")
-
-WRITE(FU) AXSYM,NB
+OPEN(FU,FILE="git.dat")
 
 !!! BLOCK 1.
-WRITE(FU) NI+1,NJ+1
-!!! BLOCK 2.
-WRITE(FU) NI+1,NJ+1
-!!! BLOCK 3.
-WRITE(FU) NI+1,NJ+1
+WRITE(FU,*) NI+1,NJ+1
 
 DO J = 0, NJ
    DO I = 0,NI
-      WRITE(FU) DBLE(I)*RADIUS*0.3D0/DBLE(NI) &
+      WRITE(FU,*) DBLE(I)*RADIUS*0.3D0/DBLE(NI) &
                  ,DBLE(J)*RADIUS*0.3D0/DBLE(NJ)
    END DO
 END DO
+!!! BLOCK 2.
+WRITE(FU,*) NI+1,NJ+1
 
 DO J = 0, NJ
    DO I = 0,NI
@@ -45,12 +39,14 @@ DO J = 0, NJ
          write(*,*) epktx,epkty
          write(*,*) lx,ly,sqrt(lx*lx+ly*ly)
       END IF
-      WRITE(FU) spktx + DBLE(J)/DBLE(NJ) * lx &
+      WRITE(FU,*) spktx + DBLE(J)/DBLE(NJ) * lx &
                  ,spkty + DBLE(J)/DBLE(NJ) * ly
 !      WRITE(FU,*) DBLE(I)*RADIUS*0.5D0/DBLE(NI) &
 !                 ,DBLE(J)*RADIUS*0.5D0/DBLE(NJ) + RADIUS*0.5D0
    END DO
 END DO
+!!! BLOCK 3.
+WRITE(FU,*) NI+1,NJ+1
 
 DO J = 0, NJ
    DO I = 0,NI
@@ -73,7 +69,7 @@ DO J = 0, NJ
          write(*,*) lx,ly,sqrt(lx*lx+ly*ly)
       END IF
 
-      WRITE(FU) spktx + DBLE(J)/DBLE(NJ) * lx &
+      WRITE(FU,*) spktx + DBLE(J)/DBLE(NJ) * lx &
                  ,spkty + DBLE(J)/DBLE(NJ) * ly
 !      WRITE(FU,*) DBLE(J)*RADIUS*0.5D0/DBLE(NJ) + RADIUS*0.5D0&
 !                 ,DBLE(NI-I)*RADIUS*0.5D0/DBLE(NI)
@@ -84,4 +80,4 @@ CLOSE(FU)
 WRITE(*,*) "DONE"
 
 
-end program
+end program gridgen_nozzle_simple

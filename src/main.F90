@@ -90,6 +90,7 @@ program grid_adaption
       CALL WRITE_TECPLOT("sol_plot.plt")
    END IF
 
+   CALL UNSTR2STR()
    CALL OUTPUT_GRID()
 
    WRITE(*,*) "======================================================" &
