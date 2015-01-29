@@ -1,78 +1,49 @@
 program gridgen_nozzle_simple
 implicit none
-INTEGER, PARAMETER :: NI = 10
+
+REAL(KIND = 8), PARAMETER :: POS_THROAT = 0.3
+
+INTEGER, PARAMETER :: NI   = 20
+INTEGER, PARAMETER :: NI_THROAT = NI * POS_THROAT
+
 INTEGER, PARAMETER :: NJ = 10
+
 INTEGER, PARAMETER :: FU = 666
-REAL(KIND = 8), PARAMETER :: Pi = 3.1415927/180.D0
-REAL(KIND = 8), PARAMETER :: RADIUS = 10.0D0
+INTEGER, PARAMETER :: NB = 1
+INTEGER, PARAMETER :: AXSYM = 0
+
+REAL(KIND = 8), PARAMETER :: Y_IN     = 2.0D0
+REAL(KIND = 8), PARAMETER :: Y_THROAT = 1.0D0
+REAL(KIND = 8), PARAMETER :: Y_END    = 3.0D0
+REAL(KIND = 8), PARAMETER :: X_END    = 7.0D0
+REAL(KIND = 8), PARAMETER :: X_THROAT = X_END * POS_THROAT
 
 INTEGER :: I ,J
-REAL(KIND = 8) :: spktx,spkty,epkty,epktx,lx,ly, winkel
-WRITE(*,*) "GRIDGEN FÜR EIN EINFACHES O_GRID 08.10.2014"
+REAL(KIND = 8) :: spktx,spkty,epkty,epktx,lx,ly, y_max
+WRITE(*,*) "GRIDGEN for a simple NOZZLE 29.01.2015"
 
-OPEN(FU,FILE="git.dat")
+WRITE(*,'(A,3(X,A,":",X,I0))') "GITTERDIMENSIONEN:", "NI",NI,"NI_THROAT",NI_THROAT,"NJ",NJ
+
+WRITE(*,*) "INLET : Y:", Y_IN
+WRITE(*,*) "THROAT: X:", X_THROAT,"Y:",Y_THROAT
+WRITE(*,*) "EXIT  : X:", X_END   ,"Y:",Y_END
+OPEN(FU,FILE="git.bin",FORM="UNFORMATTED",access="STREAM",STATUS="replace")
+
+WRITE(FU) AXSYM,NB
 
 !!! BLOCK 1.
-WRITE(FU,*) NI+1,NJ+1
-
-DO J = 0, NJ
-   DO I = 0,NI
-      WRITE(FU,*) DBLE(I)*RADIUS*0.3D0/DBLE(NI) &
-                 ,DBLE(J)*RADIUS*0.3D0/DBLE(NJ)
-   END DO
-END DO
+WRITE(FU) NI+1,NJ+1
 !!! BLOCK 2.
-WRITE(FU,*) NI+1,NJ+1
 
 DO J = 0, NJ
    DO I = 0,NI
-      winkel =  45.0D0 * DBLE(I) /DBLE(NI) * pi
-      spktx = DBLE(I)*RADIUS*0.3D0/DBLE(NI)
-      spkty = RADIUS*0.3D0
-      epktx = RADIUS * SIN(WINKEL)
-      epkty = RADIUS * COS(WINKEL)
-      lx = epktx-spktx
-      ly = epkty-spkty
-      IF (J == 0) THEN
-         write(*,*) winkel
-         write(*,*) spktx,spkty
-         write(*,*) epktx,epkty
-         write(*,*) lx,ly,sqrt(lx*lx+ly*ly)
-      END IF
-      WRITE(FU,*) spktx + DBLE(J)/DBLE(NJ) * lx &
-                 ,spkty + DBLE(J)/DBLE(NJ) * ly
-!      WRITE(FU,*) DBLE(I)*RADIUS*0.5D0/DBLE(NI) &
-!                 ,DBLE(J)*RADIUS*0.5D0/DBLE(NJ) + RADIUS*0.5D0
-   END DO
-END DO
-!!! BLOCK 3.
-WRITE(FU,*) NI+1,NJ+1
+      IF (I < NI_THROAT) then
+         Y_MAX = Y_IN - (Y_IN - Y_THROAT) * DBLE(I) / DBLE(NI_THROAT)
 
-DO J = 0, NJ
-   DO I = 0,NI
-      winkel =  (45.0D0 + 45.0D0 * DBLE(I) / DBLE(NI)) * pi
-      spkty = DBLE(NI-I) * RADIUS * 0.3D0 / DBLE(NI)
-      spktx = RADIUS * 0.3D0
-      epktx = RADIUS * SIN(WINKEL)
-      epkty = RADIUS * COS(WINKEL)
-      IF (I == NI) THEN
-         epktx = RADIUS
-         epkty = 0.0D0
-      END IF
-      lx = epktx-spktx
-      ly = epkty-spkty
-
-      IF (J == 0) THEN
-         write(*,*) winkel
-         write(*,*) spktx,spkty
-         write(*,*) epktx,epkty
-         write(*,*) lx,ly,sqrt(lx*lx+ly*ly)
-      END IF
-
-      WRITE(FU,*) spktx + DBLE(J)/DBLE(NJ) * lx &
-                 ,spkty + DBLE(J)/DBLE(NJ) * ly
-!      WRITE(FU,*) DBLE(J)*RADIUS*0.5D0/DBLE(NJ) + RADIUS*0.5D0&
-!                 ,DBLE(NI-I)*RADIUS*0.5D0/DBLE(NI)
+      else
+         Y_MAX = Y_THROAT + (Y_END-Y_THROAT) * DBLE(I-NI_THROAT) / DBLE(NI-NI_THROAT)
+      end if
+      WRITE(FU) X_END * DBLE(I)/DBLE(NI), Y_MAX * DBLE(J)/DBLE(NJ)
    END DO
 END DO
 

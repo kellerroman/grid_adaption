@@ -1,12 +1,15 @@
+FC=gfortran
+
 run: gridgen
 	./gridgen
 
 gridgen: gridgen.F90
-	gfortran gridgen.F90 -o gridgen
+	$(FC) $< -o $@
 
 .PHONY: run gridgen clean
+
 clean:
-	@rm -f git.bin gridgen *~  *.vtk
+	@rm -f git.* gridgen *~  *.vtk *.lay *.plt
 
 paraview: run
 	../../../bin/sol2para -git

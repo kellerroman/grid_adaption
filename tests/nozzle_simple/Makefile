@@ -7,7 +7,7 @@ CFLAGS += -fbounds-check -fcheck-array-temporaries -Wall
 CFLAGS += -DDEBUG
 
 GRID_ADAPT=$(HOMEDIR)bin/grid_adapt
-.PHONY: clean all 
+.PHONY: all cmp run gridgen cp clean
 
 	
 all: cmp run
