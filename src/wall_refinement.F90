@@ -290,7 +290,7 @@ contains
                            write(*,'(A)') "Warning in input_wall_refinement"
                            write(*,'(A,X,I0,X,A)') "NORTH SIDE OF BLOCK",iBlock,"is already defined"
                         end if
-                     CASE("o")
+                     CASE("e")
                         BLOCK_PHASE = "EAST"
                         if (BLOCKS(iBLOCK) % BLOCK_CONNECTION(2,1) == -1000) then
                            BLOCKS(iBLOCK) % BLOCK_CONNECTION(2,1) = zustand
