@@ -13,3 +13,6 @@ clean:
 
 paraview: run
 	../../../bin/sol2para -git
+	
+tecplot: run
+	@u2p -git

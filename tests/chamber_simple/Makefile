@@ -15,8 +15,8 @@ all: cmp run
 cmp:
 	$(MAKE) -C $(HOMEDIR)
 
-run:
-	@echo 'Running Grid-Adaper on simple Nozzle'
+run: gridgen
+	@echo 'Running Grid-Adaper on simple Chamber'
 	$(GRID_ADAPT) #-debug
 
 gridgen:
@@ -24,6 +24,7 @@ gridgen:
 	
 cp:
 	$(MAKE) -C $(HOMEDIR) clean
+	
 clean:
 	rm -vf *.o git_out.bin *.mod *.ufo *.dat *.plt *.png *.vtk *.txt
 	rm -vrf *~

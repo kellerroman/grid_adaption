@@ -45,7 +45,7 @@ INTEGER, PARAMETER :: N9 = 10
 
 REAL(KIND=8), PARAMETER :: xm1 = -1.0D0
 REAL(KIND=8), PARAMETER :: x0  =  0.0D0
-REAL(KIND=8), PARAMETER :: x2  =  5.00D0
+REAL(KIND=8), PARAMETER :: x2  =  5.0D0
 REAL(KIND=8), PARAMETER :: x3  =  5.4D0
 REAL(KIND=8), PARAMETER :: x4  =  5.5D0
 REAL(KIND=8), PARAMETER :: x5  =  6.0D0
@@ -62,7 +62,7 @@ TYPE(TBLOCKS) :: BLOCKS(NUM_OF_BLOCKS)
 
 INTEGER :: B,I,J,N,KB,gj
 
-REAL(KIND=8) :: y_max
+REAL(KIND=8) :: y_max,dy
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!                                                                                        !!!!!
 !!!!!!                    BERECHUNG DER KLEINSTEN ZELLGRÖßE IN RADIALER RICHTUNG              !!!!!
@@ -70,6 +70,9 @@ REAL(KIND=8) :: y_max
 !!!!!!       Annahme: konstante Vergrößerung für bestimmte Anzahl an Zellen, dann konst.      !!!!!
 !!!!!!                                                                                        !!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+WRITE(*,*) "======================================================" &
+          ,"GRIDGEN"  &
+          ,"======================================================"
 
 BLOCKS(1) % NI = N5
 BLOCKS(1) % NJ = N1
@@ -121,20 +124,30 @@ DO B = 1, NUM_OF_BLOCKS
    call make_block_grid(blocks(B))
 END DO
 
-do i = n6+1, n7
-   y_max = y4 - (y5-y4) * (i-n6)
+do i = n6+1, n6+n7+n8+n9+1
+   y_max = y4 + (y5-y4) * dble(i-n6-1) / dble(n7)
+   if (i < n6+n7+1) then
+   else if (i< n6+n7+n8+1) then
+   y_max = y5
+   else
+   write(*,*) i,i-n6-n7-n8-1
+   y_max = y5 + (y6-y5) * dble(i-n6-n7-n8-1) / dble(n9)
+
+   end if
+
+   write(*,*) i,y_max
    dy = y_max / (N1+N2+N3+N4)
    gj = 0
    do n = 1,4
       b = B2S(n)
       do j = 1, BLOCKS(b) % nj+1
-         qj = qj + 1
+         gj = gj + 1
+         blocks(b) % xyz(i,j,1,2) = dy * (gj-1)
       end do
+      gj = gj -1
    end do
 end do
-WRITE(*,*) "======================================================" &
-          ,"GRIDGEN"  &
-          ,"======================================================"
+
 
 WRITE(*,*) "TOTAL NUMBER OF CELLS:",      N
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! X !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
