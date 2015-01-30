@@ -11,4 +11,5 @@
 !!          WALL REFINMENT CONSTANTEN ANPASSEN ZUR SCHNELLEREN ANPASSUNG
 !!          PARALLELISIERUNG: OPENMP 
 !!          PARALLELISIERUNG: MPI
+!!          TOOL for CONFIG-FILE-GENERATION / UPDATE / TESTING
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
