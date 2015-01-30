@@ -352,6 +352,7 @@ contains
       STOP
    END IF
    DO U = 1,UNSTR % NPKT
+      !!! INNER GITTERPUNKTE WERDEN ÜBERSPRUNGEN
       IF ( UNSTR % PKT_TYPE(U) == 1) CYCLE
 #ifdef DEBUG
       IF (GLOBAL%DBG >= 2)  THEN
@@ -365,6 +366,7 @@ contains
 #endif
       I = 0
       J = 0
+      !!! ALLE NACHBARPUNKT ÜBERPRÜFEN
       DO N = 1, UNSTR % PKT_NKNT(U)
          K = UNSTR % PKT_NEIGH(U,N)
 #ifdef DEBUG
@@ -372,9 +374,11 @@ contains
             WRITE(*,*) K,UNSTR % XYZ(K,1),UNSTR % XYZ(K,2)
          END IF
 #endif
+         ! ZÄHLER I sind PUNKTE MIT GLEICHEM y WERT -> SENKRECHTE WAND
          IF (ABS(UNSTR % XYZ(U,2) - UNSTR % XYZ(K,2)) <= ERROR) THEN
             I = I +1
          END IF
+         ! ZÄHLER J sind PUNKTE MIT GLEICHEM X WERT -> WAAGRECHTE WAND
          IF (ABS(UNSTR % XYZ(U,1) - UNSTR % XYZ(K,1)) <= ERROR) THEN
             J = J +1
          END IF

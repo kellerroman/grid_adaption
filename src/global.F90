@@ -91,36 +91,37 @@ MODULE TYPES
    END TYPE
 
    TYPE :: TUNSTR
-      INTEGER :: NPKT
-      INTEGER :: NKNT
+      INTEGER                       :: NPKT
+      INTEGER                       :: NKNT
 
-      REAL(KIND=8),ALLOCATABLE :: XYZ(:,:)
+      REAL(KIND=8),ALLOCATABLE      :: XYZ(:,:)
 !< KOORDINATEN DES PUNKTES
-      REAL(KIND=8),ALLOCATABLE :: PKT_VAR(:,:)
+      REAL(KIND=8),ALLOCATABLE      :: PKT_VAR(:,:)
 !< Grid-Point Variables
-      INTEGER, ALLOCATABLE :: PKT_TYPE(:)
+      INTEGER, ALLOCATABLE          :: PKT_TYPE(:)
 !< Art eines Gitterpunkts:
 !< 1 - normaler Grid-interner Punkt. Besitzt 4 "normale" umliegende Zellen
 !< 2 - Randzelle: Kann nicht verschoben werden
 !< 3 - Randzelle: Verschiebbar in X-Richtung
 !< 4 - Randzellle Verschiebbar in Y-Richtung
-      INTEGER, ALLOCATABLE :: PKT_NKNT(:)
+      INTEGER, ALLOCATABLE          :: PKT_NKNT(:)
 !< ANzAHL DER KANTEN an PUNKTE
-      INTEGER, ALLOCATABLE :: PKT_KNT(:,:)
+      INTEGER, ALLOCATABLE          :: PKT_KNT(:,:)
 !< KANTEN DIE IN VERBINDUNG MIT DEM PUNKT STEHEN
 !< Entspricht auch der Anzahl von Nachbarn
-      INTEGER, ALLOCATABLE :: PKT_NEIGH(:,:)
+      INTEGER, ALLOCATABLE          :: PKT_NEIGH(:,:)
 !< Nachbarpunkte anhand der Kanten, könnte auch über die Kanten ermittelt werden.
-      INTEGER, ALLOCATABLE :: PKT_REF(:,:)
+      INTEGER, ALLOCATABLE          :: PKT_REF(:,:)
 !< REFERENZKNOTENPKT AUF DEN GITTER ZUR WERTINTERPOLATION
 
-      REAL(KIND=8),ALLOCATABLE :: DELTA(:,:,:,:,:)           ! Du/Dn an den "KANTEN" (RICHTUNG der KANTE(i,j,k), Richtungsanteil(||,x,y,z), 3xPOS
-      INTEGER, ALLOCATABLE :: KNT(:,:)
+      REAL(KIND=8),ALLOCATABLE      :: DELTA(:,:,:,:,:)
+!< Du/Dn an den "KANTEN" (RICHTUNG der KANTE(i,j,k), Richtungsanteil(||,x,y,z), 3xPOS
+      INTEGER, ALLOCATABLE          :: KNT(:,:)
 !< Vorhandene Kanten = Verbindung zwischen zwei Punkten
 
-      REAL(KIND=8),ALLOCATABLE :: KNT_DN(:,:)
+      REAL(KIND=8),ALLOCATABLE      :: KNT_DN(:,:)
 !< Kantelänge 1 = Betrag, 2 = dX, 3 = dY
-      REAL(KIND=8),ALLOCATABLE :: KNT_SPANNUNG(:,:)         !
+      REAL(KIND=8),ALLOCATABLE      :: KNT_SPANNUNG(:,:)         !
 
 !      INTEGER, ALLOCATABLE :: PKT_IS
 

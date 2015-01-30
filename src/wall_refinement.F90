@@ -3,12 +3,26 @@ use const, only: dp
 implicit none
 private
 
-INTEGER, ALLOCATABLE,save              :: KNT(:)
-INTEGER,save                           :: NKNT = 0
-REAL(KIND = DP),save                   :: WALL_DIST
-REAL(KIND = DP), ALLOCATABLE,save      :: KNT_FORCE(:)
+INTEGER,save                           :: NKNT
+!< Anzahl der WANDPUNKTE / WAND-KANTEN
+REAL(KIND = DP), ALLOCATABLE,SAVE      :: KNT_FORCE(:)
+!< KRAFT WELCHE AUFGEWÄNDET WIRD
+!!! FÜR METHODE 1
+INTEGER, ALLOCATABLE,SAVE              :: KNT(:)
+
+!! METHODE 2
+INTEGER, ALLOCATABLE, SAVE             :: PKT_CTW(:)
+!< Wandnächster Punkt (Close To Wall)
+INTEGER, ALLOCATABLE, SAVE             :: PKT_AW(:)
+!< Wandpunkt (At Wall)
+REAL(KIND = DP), ALLOCATABLE,SAVE      :: PKT_DXY(:,:)
+!< Differenzvektor des idealen Wandnäcshten Punktes vom wandnächsten Punkt
+!< für Type = 2 und 3 sehr einfach, da in x bzw y Richtung
+!< 1 Parameter ist Punkt_ID , zweiter Dimension
+
 REAL(KIND = DP), PARAMETER             :: MAX_INC = 1.001D+0
 REAL(KIND = DP), PARAMETER             :: MIN_INC = 0.995D+0
+REAL(KIND = DP),save                   :: WALL_DIST
 
 
 public input_wall_refinement
@@ -26,12 +40,22 @@ contains
       integer :: pkt1
       integer :: pkt2
       integer :: kn
-      INTEGER :: NKAW
       INTEGER :: KAW(KAW_MAX)
+      integer :: typ
       !< Number Kanten At Wall
-      if (global % wall_refinement > 0) then
-         NKAW = 0
-         block_loop: do B = 1, global % NBLOCK
+
+      INTEGER :: P1(KAW_MAX)
+      INTEGER :: P2(KAW_MAX)
+
+      !!
+      !!
+      !! DIESE ART DER WANDVERFEINERUNG ERZWINGT EINE VORGEGEBENE KANTENLÄNGE
+      !! KANN BEI KOMPLIZIERTEN GEOMETRIEN ZU FEHLERN FÜHREN
+      !!
+      global_refinement: if (global % wall_refinement ==1) then
+
+         NKNT = 0
+         block_loop1: do B = 1, global % NBLOCK
             !! WEST BOUNDARY
             F = 1
             if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
@@ -51,13 +75,13 @@ contains
                         !WENN KANTE kn von PKT1 mit PKT2 verbunden ist
                         if (pkt2 == UNSTR % PKT_NEIGH(pkt1,kn)) then
                            ! KANTE KN von PKT in LISTE AUFNEHMEN
-                           NKAW = NKAW + 1
-                           if (NKAW > KAW_MAX) then
+                           NKNT = NKNT + 1
+                           if (NKNT > KAW_MAX) then
                               write(*,'(A)') "ERROR in INIT_BOUNDARY"
                               write(*,'(A,X,I0)') "Number of Edges is larger than the temporary array size:",KAW_MAX
                               stop
                            end if
-                           KAW(NKAW) = UNSTR % PKT_KNT(pkt1,kn)
+                           KAW(NKNT) = UNSTR % PKT_KNT(pkt1,kn)
                         end if
                      end do
                   end do
@@ -82,13 +106,13 @@ contains
                         !WENN KANTE kn von PKT1 mit PKT2 verbunden ist
                         if (pkt2 == UNSTR % PKT_NEIGH(pkt1,kn)) then
                            ! KANTE KN von PKT in LISTE AUFNEHMEN
-                           NKAW = NKAW + 1
-                           if (NKAW > KAW_MAX) then
+                           NKNT = NKNT + 1
+                           if (NKNT > KAW_MAX) then
                               write(*,'(A)') "ERROR in INIT_BOUNDARY"
                               write(*,'(A,X,I0)') "Number of Edges is larger than the temporary array size:",KAW_MAX
                               stop
                            end if
-                           KAW(NKAW) = UNSTR % PKT_KNT(pkt1,kn)
+                           KAW(NKNT) = UNSTR % PKT_KNT(pkt1,kn)
                         end if
                      end do
                   end do
@@ -112,13 +136,13 @@ contains
                         !WENN KANTE kn von PKT1 mit PKT2 verbunden ist
                         if (pkt2 == UNSTR % PKT_NEIGH(pkt1,kn)) then
                            ! KANTE KN von PKT in LISTE AUFNEHMEN
-                           NKAW = NKAW + 1
-                           if (NKAW > KAW_MAX) then
+                           NKNT = NKNT + 1
+                           if (NKNT > KAW_MAX) then
                               write(*,'(A)') "ERROR in INIT_BOUNDARY"
                               write(*,'(A,X,I0)') "Number of Edges is larger than the temporary array size:",KAW_MAX
                               stop
                            end if
-                           KAW(NKAW) = UNSTR % PKT_KNT(pkt1,kn)
+                           KAW(NKNT) = UNSTR % PKT_KNT(pkt1,kn)
                         end if
                      end do
                   end do
@@ -142,22 +166,22 @@ contains
                         !WENN KANTE kn von PKT1 mit PKT2 verbunden ist
                         if (pkt2 == UNSTR % PKT_NEIGH(pkt1,kn)) then
                            ! KANTE KN von PKT in LISTE AUFNEHMEN
-                           NKAW = NKAW + 1
-                           if (NKAW > KAW_MAX) then
+                           NKNT = NKNT + 1
+                           if (NKNT > KAW_MAX) then
                               write(*,'(A)') "ERROR in INIT_BOUNDARY"
                               write(*,'(A,X,I0)') "Number of Edges is larger than the temporary array size:",KAW_MAX
                               stop
                            end if
-                           KAW(NKAW) = UNSTR % PKT_KNT(pkt1,kn)
+                           KAW(NKNT) = UNSTR % PKT_KNT(pkt1,kn)
                         end if
                      end do
                   end do
                end do
             end if
-         end do block_loop
+         end do block_loop1
 
          !ABSPEICHERN DER KANTEN IN DEM ENDGÜLTIGEN ARRAY
-         NKNT = nkaw
+         NKNT = NKNT
 
          allocate(KNT(NKNT))
 
@@ -167,8 +191,126 @@ contains
          do i = 1,NKNT
             KNT(i) = KAW(i)
          end do
-!      write(*,*) nkaw
-      end if
+!      write(*,*) NKNT
+      !!
+      !! DIESE ART DER WANDVERFEINERUNG VERSUCHT ORTHOGONALE WANDABSTÄNDE HERZUSTELLEN IDEM DER WANDNÄCHSTE PUNKT
+      !! IN RICHTUNG DES IDEALEN PUNKTES VERSCHOBEN WIRD
+      !!
+      else if (global % wall_refinement == 2) then global_refinement
+         NKNT = 0
+         block_loop2: do B = 1, global % NBLOCK
+            !! WEST BOUNDARY
+            F = 1
+            if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
+               i  = 1
+               i2 = 2
+               do j = 1, BLOCKS(B) % NPJ
+                  do k = 1, BLOCKS(B) % NPK
+                     j2 = j
+                     k2 = k
+                     NKNT = NKNT + 1
+                     P1(NKNT) = BLOCKS(b) % assoc(i ,j ,k)
+                     P2(NKNT) = BLOCKS(b) % assoc(i2,j2,k2)
+                  end do
+               end do
+            end if
+            !! OST BOUNDARY
+            F = 2
+            if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
+               i  = BLOCKS(B) % NPI
+               i2 = I-1
+               do j = 1, BLOCKS(B) % NPJ
+                  do k = 1, BLOCKS(B) % NPK
+
+                     j2 = j
+                     k2 = k
+
+                     NKNT = NKNT + 1
+                     P1(NKNT) = BLOCKS(b) % assoc(i ,j ,k)
+                     P2(NKNT) = BLOCKS(b) % assoc(i2,j2,k2)
+                  end do
+               end do
+            end if
+            !! SUED BOUNDARY
+            F = 3
+            if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
+               j  = 1
+               j2 = j+1
+               do i = 1, BLOCKS(B) % NPI
+                  do k = 1, BLOCKS(B) % NPK
+                     i2 = I
+                     k2 = k
+
+                     NKNT = NKNT + 1
+                     P1(NKNT) = BLOCKS(b) % assoc(i ,j ,k)
+                     P2(NKNT) = BLOCKS(b) % assoc(i2,j2,k2)
+                  end do
+               end do
+            end if
+            !! NORD BOUNDARY
+            F = 4
+            if (BLOCKS(B) % BLOCK_CONNECTION(F,1) == 0) then
+               j  = BLOCKS(B) % NPJ
+               j2 = j-1
+               do i = 1, BLOCKS(B) % NPI
+                  do k = 1, BLOCKS(B) % NPK
+                     i2 = I
+                     k2 = k
+                     NKNT = NKNT + 1
+                     P1(NKNT) = BLOCKS(b) % assoc(i ,j ,k)
+                     P2(NKNT) = BLOCKS(b) % assoc(i2,j2,k2)
+                  end do
+               end do
+            end if
+         end do block_loop2
+
+         !ABSPEICHERN DER KANTEN IN DEM ENDGÜLTIGEN ARRAY
+
+         allocate(PKT_AW (NKNT) )
+         allocate(PKT_CTW(NKNT) )
+         allocate(KNT_FORCE(NKNT))
+         allocate(PKT_DXY(NKNT,2))
+
+         KNT_FORCE = 1.0D-5
+         PKT_DXY = 0.0D0
+         do i = 1,NKNT
+            PKT_AW (I) = P1(I)
+            PKT_CTW(I) = P2(I)
+            typ = UNSTR % PKT_TYPE(PKT_AW(i))
+            if (typ == 3) then
+               !!!! WAAGRECHTE WAND
+               PKT_DXY(I,1) = 0.0D0
+               PKT_DXY(I,2) = SIGN(WALL_DIST,UNSTR % XYZ(PKT_CTW(I),2)-UNSTR % XYZ(PKT_AW(I),2))
+            else if (typ == 4) then
+               !!!! SENKRECHTE WAND
+               PKT_DXY(I,1) = SIGN(WALL_DIST,UNSTR % XYZ(PKT_CTW(I),1)-UNSTR % XYZ(PKT_AW(I),1))
+               PKT_DXY(I,2) = 0.0D0
+            else
+               if (UNSTR % PKT_TYPE(PKT_CTW(i)) == 3) then
+                  PKT_DXY(I,1) = SIGN(WALL_DIST,UNSTR % XYZ(PKT_CTW(I),1)-UNSTR % XYZ(PKT_AW(I),1))
+                  PKT_DXY(I,2) = 0.0D0
+               else if (UNSTR % PKT_TYPE(PKT_CTW(i)) == 4) then
+                  PKT_DXY(I,1) = 0.0D0
+                  PKT_DXY(I,2) = SIGN(WALL_DIST,UNSTR % XYZ(PKT_CTW(I),2)-UNSTR % XYZ(PKT_AW(I),2))
+               else
+                  if (ABS(UNSTR % XYZ(PKT_CTW(I),1)-UNSTR % XYZ(PKT_AW(I),1)) < 1D-10) then
+                     !!!! WAAGRECHTE WAND
+                     PKT_DXY(I,1) = 0.0D0
+                     PKT_DXY(I,2) = SIGN(WALL_DIST,UNSTR % XYZ(PKT_CTW(I),2)-UNSTR % XYZ(PKT_AW(I),2))
+                  else if (ABS(UNSTR % XYZ(PKT_CTW(I),2)-UNSTR % XYZ(PKT_AW(I),2)) < 1D-10) then
+                     !!!! SENKRECHTE WAND
+                     PKT_DXY(I,1) = SIGN(WALL_DIST,UNSTR % XYZ(PKT_CTW(I),1)-UNSTR % XYZ(PKT_AW(I),1))
+                     PKT_DXY(I,2) = 0.0D0
+                  else
+
+                     write(*,'(3(I6,X),I1,2(X,ES12.5))') i,pkt_aw(i),pkt_ctw(i),TYP,PKT_DXY(I,1),PKT_DXY(I,2)
+                     write(*,*) "Init Wall Refinement: Wanddelta nicht berechnen"
+                     stop
+                  end if
+               end if
+            end if
+         end do
+      end if global_refinement
 
    END SUBROUTINE init_wall_refinement
 
@@ -356,8 +498,20 @@ contains
       USE MOD_GLOBAL
       IMPLICIT NONE
 
-      integer :: k, i
+      integer :: k, i ,p1, p2, e,tempsort
+
+      integer :: nedge
+      !< Anzahl der kanten
       REAL(KIND=8) :: TEMP
+      REAL(KIND=8) :: ipos(2)
+
+      REAL(KIND=8) :: fvec(2)
+      !< force vector
+      REAL(KIND=8) :: evec(4,2)
+      !< edge vector
+      REAL(KIND=8) :: sp(4)
+      integer :: sort(4)
+
       if (global % wall_refinement > 0) then
 #ifdef DEBUG
          IF (GLOBAL%DBG >= 1)  THEN
@@ -369,6 +523,11 @@ contains
             WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","WANDVERFEINERUNG"
             STOP
          END IF
+         !!
+         !!
+         !! DIESE ART DER WANDVERFEINERUNG ERZWINGT EINE VORGEGEBENE KANTENLÄNGE
+         !! KANN BEI KOMPLIZIERTEN GEOMETRIEN ZU FEHLERN FÜHREN
+         !!
          if (GLOBAL % WALL_REFINEMENT == 1) then
             do i = 1,NKNT
                k = KNT(i)
@@ -383,11 +542,50 @@ contains
 
                UNSTR % KNT_SPANNUNG(k,1) = UNSTR % KNT_SPANNUNG(k,1) + KNT_FORCE(i)
             end do
+         !!
+         !! DIESE ART DER WANDVERFEINERUNG VERSUCHT ORTHOGONALE WANDABSTÄNDE HERZUSTELLEN IDEM DER WANDNÄCHSTE PUNKT
+         !! IN RICHTUNG DES IDEALEN PUNKTES VERSCHOBEN WIRD
+         !!
          else if (GLOBAL % WALL_REFINEMENT == 2) then
             do i = 1,NKNT
-               k = KNT(i)
+               p1    = PKT_AW(I)
+               p2    = PKT_CTW(I)
+               ipos  = unstr % xyz(p1,1:2) + PKT_DXY(I,:)
+               fvec   = ipos - unstr % xyz(p2,1:2)
+               nedge = unstr % PKT_NKNT(p2)
+
+               do k = 1, nedge
+                  e = unstr % PKT_KNT (p2,k)
+                  evec(k,:) = unstr % KNT_DN(e,2:3)
+                  !! ORIENTIERUNG DES VEKTORS UMDREHEN, WENN ER AUF P2 ZEIGT
+                  if (p2 == unstr % KNT(e,2) ) then
+                     evec(k,:) = - evec(k,:)
+                  end if
+                  evec(k,:) = evec(k,:) / sqrt(evec(k,1)*evec(k,1)+evec(k,2)*evec(k,2))
+                  sp(k) = dot_product(fvec,evec(k,:))
+                  sort(k) = k
+                  e = k+1
+                  if (k > 1) then
+                     do
+                        e = e-1
+                        if (sp(sort(e-1)) < sp(sort(e)) ) then
+                           tempsort = sort(e-1)
+                           sort(e-1) = sort(e)
+                           sort(e) = tempsort
+                        else
+                           exit
+                        end if
+                        if (e == 2) exit
+                     end do
+                  end if
+
+               end do
+               write(*,*) sort(1:4)
+               write(*,'(6(ES12.5,X))') unstr % xyz(p2,1:2), ipos,fvec
+               write(*,'(3(ES12.5,X))') (evec(k,:),sp(k),k=1,nedge)
 
             end do
+            stop
          end if
       end if
    END SUBROUTINE calc_wall_refinement
