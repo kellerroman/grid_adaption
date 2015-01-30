@@ -31,10 +31,7 @@ contains
          CALL INPUT_SOL()
       END IF
 
-      IF (GLOBAL % DO_WALL_REFINEMENT == 1) THEN
-!         CALL INPUT_RANDBED() !EINLESEN DER RANDBEDINGUNGEN
-         call input_wall_refinement()
-      END IF
+      call input_wall_refinement()
 
 #ifdef DEBUG
       IF (GLOBAL%DBG == 1)  THEN
@@ -70,14 +67,17 @@ contains
    GLOBAL % SOL_OUT            = "avarout_out.ufo"
    GLOBAL % DBG                = 0
    GLOBAL % NITER              = 0
+   GLOBAL % NITER_OUTPUT       = 100
    GLOBAL % FAKTOR             = 0.5D0
    GLOBAL % FILE_TYPE          = 1
    GLOBAL % OUTPUT_TYPE        = 0
    GLOBAL % OUTPUT_ANIMATION   = 0
    GLOBAL % CHECK_FOR_DOUBLE_POINTS = 1
    GLOBAL % CHECK_FOR_DOUBLE_KANTEN = 1
-   GLOBAL % DO_WALL_REFINEMENT = 0
-   GLOBAL % RANDBED_IN         = "randbed.dat"
+   GLOBAL % NODE_MOVEMENT_MECHNISM  = 1
+   GLOBAL % WALL_REFINEMENT = 0
+   GLOBAL % WALL_REFINEMENT_CHECK = 0
+   GLOBAL % WALL_REFINEMENT_FILE = "randbed.dat"
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !
    !                            KOMMANDOZEILE AUSLESEN
@@ -154,6 +154,13 @@ contains
             WRITE(*,*) "WERT FÜR NITER IS KEIN INTEGER"
             STOP
          END IF
+      CASE ("niter_output")
+         IF (IS_INTEGER(VARVALUE)) THEN
+            READ(VARVALUE,*) Global%NITER_OUTPUT
+         ELSE
+            WRITE(*,*) "WERT FÜR NITER_OUTPUT IS KEIN INTEGER"
+            STOP
+         END IF
       CASE ("move_faktor")
          IF (IS_REAL(VARVALUE)) THEN
             READ(VARVALUE,*) Global%FAKTOR
@@ -204,15 +211,31 @@ contains
             WRITE(*,*) "WERT FÜR CHECK_FOR_DOUBLE_KANTEN IS KEIN INTEGER"
             STOP
          END IF
-      CASE ("do_wall_refinement")
+      CASE ("node_movement_mechanism")
          IF (IS_INTEGER(VARVALUE)) THEN
-            READ(VARVALUE,*) Global % DO_WALL_REFINEMENT
+            READ(VARVALUE,*) GLOBAL % NODE_MOVEMENT_MECHNISM
          ELSE
-            WRITE(*,*) "WERT FÜR DO_WALL_REFINEMENT IS KEIN INTEGER"
+            WRITE(*,*) "WERT FÜR NODE_MOVEMENT_MECHNISM IS KEIN INTEGER"
             STOP
          END IF
-      CASE ("randbed_in")
-         GLOBAL % RANDBED_IN = VARVALUE
+
+      CASE ("wall_refinement")
+         IF (IS_INTEGER(VARVALUE)) THEN
+            READ(VARVALUE,*) Global % WALL_REFINEMENT
+         ELSE
+            WRITE(*,*) "WERT FÜR WALL_REFINEMENT IS KEIN INTEGER"
+            STOP
+         END IF
+      CASE ("wall_refinement_file")
+         GLOBAL % WALL_REFINEMENT_FILE = VARVALUE
+      CASE ("wall_refinement_check")
+         IF (IS_INTEGER(VARVALUE)) THEN
+            read(VARVALUE,*) GLOBAL % WALL_REFINEMENT_CHECK
+         ELSE
+            WRITE(*,*) "WERT FÜR WALL_REFINEMENT_CHECK IS KEIN INTEGER"
+            STOP
+         END IF
+
       CASE DEFAULT
          WRITE(*,'(A)') "LINIE NICHT ERKANNT: "//TRIM(LINE)
          STOP

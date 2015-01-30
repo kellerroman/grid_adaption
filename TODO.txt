@@ -1,0 +1,14 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!          GRID ADAPTION TODO LIST          !!!!!!!
+!!
+!! AUTHOR:           ROMAN KELLER
+!! START:            19.09.2013
+!! LAST CHANGE:      30.01.2015
+!!
+!! TODO:
+!!          INTERPOLATION HöHERER ORDNUNG (VERHINDERUNG EINES WERTESPRUNGS BEIM REFERNZPUNKTWECHSEL)
+!!          3D
+!!          WALL REFINMENT CONSTANTEN ANPASSEN ZUR SCHNELLEREN ANPASSUNG
+!!          PARALLELISIERUNG: OPENMP 
+!!          PARALLELISIERUNG: MPI
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

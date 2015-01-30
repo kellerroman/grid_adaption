@@ -70,7 +70,7 @@ program grid_adaption
          CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
 
 
-         IF (I < 50 .OR. MOD(I,100) == 0 ) THEN
+         IF (I < 50 .OR. MOD(I,GLOBAL % NITER_OUTPUT) == 0 ) THEN
             WRITE(*,'(X,I8,X,2(D12.5,X),"@",I0," (",4(I0,X),")")') I,DN_SUM &
                            ,DN_MAX,DN_MAX_POS,UNSTR%PKT_REF(DN_MAX_POS,4),UNSTR%PKT_REF(DN_MAX_POS,1:3)
             CALL CHECK_WALL_REFINEMENT()

@@ -29,7 +29,7 @@ ALLOCATE(DN(UNSTR%NPKT,2))
 
 
 
-IF ( GLOBAL % NODE_MOVEMENT == 2) THEN
+IF ( GLOBAL % NODE_MOVEMENT_MECHNISM == 2) THEN
    DN = 0.0D+00
    DO DIM = 1,2
       DO U = 1,UNSTR % NPKT
@@ -40,15 +40,13 @@ IF ( GLOBAL % NODE_MOVEMENT == 2) THEN
             !NACHBARPUNKT
             P1 = UNSTR % PKT_NEIGH(U,K)
 
-            if (UNSTR % KNT(KN,1) == U ) THEN
-               teilen = UNSTR % KNT_DN(KN,1)
-            ELSE
-               teilen = - UNSTR % KNT_DN(KN,1)
-            END IF
+            ! RICHTUNG DER SPANNUNG FESTSTELLEN
+            teilen = unstr % xyz(p1,dim) - unstr % xyz(u,dim)
+            teilen = SIGN(UNSTR % KNT_DN(KN,1),teilen)
 
-
-            DN(U,DIM) = DN(U,DIM) + UNSTR % KNT_SPANNUNG(KN,1) * UNSTR % KNT_DN(KN,DIM+1) / teilen
-!            WRITE(*,*) UNSTR % KNT_DN(KN,DIM+1)/ teilen, UNSTR% XYZ(U,DIM), UNSTR%XYZ(p1,DIM)
+            DN(U,DIM) = DN(U,DIM)                                                                  &
+                      + ABS( UNSTR % KNT_SPANNUNG(KN,1) * UNSTR % KNT_DN(KN,DIM+1) )               &
+                      / teilen
          END DO
       END DO
    END DO
