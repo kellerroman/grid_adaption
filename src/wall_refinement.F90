@@ -188,7 +188,7 @@ contains
    !< 0: UNdefiniert: Es muss eine
    !< 1: WALL DEFINITION
 
-   INTEGER :: iBLOCK,iPhase
+   INTEGER :: iBLOCK
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !

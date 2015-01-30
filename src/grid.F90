@@ -89,7 +89,7 @@ contains
       K = 1
 
       ALLOCATE ( BLOCKS_LIST  (GLOBAL%NBLOCK))
-      ALLOCATE ( BLOCKS_STATUS (-1:GLOBAL%NBLOCK))
+      ALLOCATE ( BLOCKS_STATUS (-1000:GLOBAL%NBLOCK))
 
       BLOCKS_LIST(:) = 0
       BLOCKS_STATUS(:) = 0
@@ -408,9 +408,9 @@ contains
       DO U = 1, UNSTR% NPKT
          DO N = 1, UNSTR % NPKT
             IF (U == N) CYCLE
-            IF   (ABS(UNSTR % XYZ (U,1) - UNSTR % XYZ (N,1)) <= 1E-9 &
-            .AND. ABS(UNSTR % XYZ (U,2) - UNSTR % XYZ (N,2)) <= 1E-9 &
-            .AND. ABS(UNSTR % XYZ (U,3) - UNSTR % XYZ (N,3)) <= 1E-9 ) THEN
+            IF   (ABS(UNSTR % XYZ (U,1) - UNSTR % XYZ (N,1)) <= 1D-9 &
+            .AND. ABS(UNSTR % XYZ (U,2) - UNSTR % XYZ (N,2)) <= 1D-9 &
+            .AND. ABS(UNSTR % XYZ (U,3) - UNSTR % XYZ (N,3)) <= 1D-9 ) THEN
 
                WRITE(*,'("KONTEN ",I0," UND ",I0," SIND DOPPELT VORHANDEN. KOORD: ",3(F10.7,X))') u,n, UNSTR % XYZ (N,1:3)
 
@@ -1018,11 +1018,11 @@ contains
          STOP
       ELSE IF (GLOBAL % AXSYM == -1) THEN
          DO N=1,GLOBAL%NBLOCK
-            BLOCKS(N) % SWP(0,1,1,1) =2 * BLOCKS(N)%SWP(1,1,1,1) - BLOCKS(N)%SWP(2,1,1,1)
-            BLOCKS(N) % SWP(0,1,1,2) = 1.0
-            BLOCKS(N) % SWP(BLOCKS(N)%NPI,1,1,1) = 2 * BLOCKS(N)%SWP(BLOCKS(N)%NCI,1,1,1)&
+            BLOCKS(N) % SWP(0,1,1,1) =2.0D0 * BLOCKS(N)%SWP(1,1,1,1) - BLOCKS(N)%SWP(2,1,1,1)
+            BLOCKS(N) % SWP(0,1,1,2) = 1.0D0
+            BLOCKS(N) % SWP(BLOCKS(N)%NPI,1,1,1) = 2.0D0 * BLOCKS(N)%SWP(BLOCKS(N)%NCI,1,1,1)&
                                                  - BLOCKS(N)%SWP(BLOCKS(N)%NCI-1,1,1,1)
-            BLOCKS(N) % SWP(BLOCKS(N)%NPI,1,1,2) = 1.0
+            BLOCKS(N) % SWP(BLOCKS(N)%NPI,1,1,2) = 1.0D0
          END DO
       ELSE
          k = 1
@@ -1032,24 +1032,24 @@ contains
             DO L = 1,3
                DO I = 1,BLOCKS(N)%NCI
                   ! j = 0
-                  BLOCKS(N)%SWP(I,0,K,L) = 2 * BLOCKS(N)%SWP(I,1,K,L) - BLOCKS(N)%SWP(I,2,K,L)
+                  BLOCKS(N)%SWP(I,0,K,L) = 2.0D0 * BLOCKS(N)%SWP(I,1,K,L) - BLOCKS(N)%SWP(I,2,K,L)
 
                   ! j = npj
-                  BLOCKS(N)%SWP(I,BLOCKS(N)%NPJ,K,L) = 2 * BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ,K,L)&
+                  BLOCKS(N)%SWP(I,BLOCKS(N)%NPJ,K,L) = 2.0D0 * BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ,K,L)&
                                      - BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ-1,K,L)
                END DO
                DO J = 0,BLOCKS(N)%NPJ
                   ! I = 0
-                  BLOCKS(N)%SWP(0,J,K,L) = 2 * BLOCKS(N)%SWP(1,J,K,L) - BLOCKS(N)%SWP(2,J,K,L)
+                  BLOCKS(N)%SWP(0,J,K,L) = 2.0D0 * BLOCKS(N)%SWP(1,J,K,L) - BLOCKS(N)%SWP(2,J,K,L)
                   ! I = npj
-                  BLOCKS(N)%SWP(BLOCKS(N)%NPI,J,K,L) = 2 * BLOCKS(N)%SWP(BLOCKS(N)%NCI,J,K,L)&
+                  BLOCKS(N)%SWP(BLOCKS(N)%NPI,J,K,L) = 2.0D0 * BLOCKS(N)%SWP(BLOCKS(N)%NCI,J,K,L)&
                                      - BLOCKS(N)%SWP(BLOCKS(N)%NCI-1,J,K,L)
                END DO
                DO I = 0,BLOCKS(N)%NPI,BLOCKS(N)%NPI
                   ! j = 0
-                  BLOCKS(N)%SWP(I,0,K,L) = 2 * BLOCKS(N)%SWP(I,1,K,L) - BLOCKS(N)%SWP(I,2,K,L)
+                  BLOCKS(N)%SWP(I,0,K,L) = 2.0D0 * BLOCKS(N)%SWP(I,1,K,L) - BLOCKS(N)%SWP(I,2,K,L)
                   ! j = npj
-                  BLOCKS(N)%SWP(I,BLOCKS(N)%NPJ,K,L) = 2 * BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ,K,L)&
+                  BLOCKS(N)%SWP(I,BLOCKS(N)%NPJ,K,L) = 2.0D0 * BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ,K,L)&
                                      - BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ-1,K,L)
                END DO
 
@@ -1057,24 +1057,24 @@ contains
             DO L = 1,GLOBAL%NVAR
                DO I = 1,BLOCKS(N)%NCI
                   ! j = 0
-                  BLOCKS(N)%CVAR(I,0,K,L) = 2 * BLOCKS(N)%CVAR(I,1,K,L) - BLOCKS(N)%CVAR(I,2,K,L)
+                  BLOCKS(N)%CVAR(I,0,K,L) = 2.0D0 * BLOCKS(N)%CVAR(I,1,K,L) - BLOCKS(N)%CVAR(I,2,K,L)
 
                   ! j = npj
-                  BLOCKS(N)%CVAR(I,BLOCKS(N)%NPJ,K,L) = 2 * BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ,K,L)&
+                  BLOCKS(N)%CVAR(I,BLOCKS(N)%NPJ,K,L) = 2.0D0 * BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ,K,L)&
                                      - BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ-1,K,L)
                END DO
                DO J = 0,BLOCKS(N)%NPJ
                   ! I = 0
-                  BLOCKS(N)%CVAR(0,J,K,L) = 2 * BLOCKS(N)%CVAR(1,J,K,L) - BLOCKS(N)%CVAR(2,J,K,L)
+                  BLOCKS(N)%CVAR(0,J,K,L) = 2.0D0 * BLOCKS(N)%CVAR(1,J,K,L) - BLOCKS(N)%CVAR(2,J,K,L)
                   ! I = npj
-                  BLOCKS(N)%CVAR(BLOCKS(N)%NPI,J,K,L) = 2 * BLOCKS(N)%CVAR(BLOCKS(N)%NCI,J,K,L)&
+                  BLOCKS(N)%CVAR(BLOCKS(N)%NPI,J,K,L) = 2.0D0 * BLOCKS(N)%CVAR(BLOCKS(N)%NCI,J,K,L)&
                                      - BLOCKS(N)%CVAR(BLOCKS(N)%NCI-1,J,K,L)
                END DO
                DO I = 0,BLOCKS(N)%NPI,BLOCKS(N)%NPI
                   ! j = 0
-                  BLOCKS(N)%CVAR(I,0,K,L) = 2 * BLOCKS(N)%CVAR(I,1,K,L) - BLOCKS(N)%CVAR(I,2,K,L)
+                  BLOCKS(N)%CVAR(I,0,K,L) = 2.0D0 * BLOCKS(N)%CVAR(I,1,K,L) - BLOCKS(N)%CVAR(I,2,K,L)
                   ! j = npj
-                  BLOCKS(N)%CVAR(I,BLOCKS(N)%NPJ,K,L) = 2 * BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ,K,L)&
+                  BLOCKS(N)%CVAR(I,BLOCKS(N)%NPJ,K,L) = 2.0D0 * BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ,K,L)&
                                      - BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ-1,K,L)
                END DO
 

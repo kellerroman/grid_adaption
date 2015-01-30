@@ -1,7 +1,8 @@
 FC=gfortran
+#FC=ifort
 
 #CFLAGS  = -Wconversion -Wall -Wextra -fbounds-check
-CFLAGS += -DDEBUG #Unnecessary comments are oppressed
+#CFLAGS += -DDEBUG #Unnecessary comments are oppressed
 CFLAGS += -O3
 
 EXECUTABLE = ../bin/grid_adapt

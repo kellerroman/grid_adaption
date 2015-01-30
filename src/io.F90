@@ -70,7 +70,7 @@ contains
    GLOBAL % SOL_OUT            = "avarout_out.ufo"
    GLOBAL % DBG                = 0
    GLOBAL % NITER              = 0
-   GLOBAL % FAKTOR             = 0.5
+   GLOBAL % FAKTOR             = 0.5D0
    GLOBAL % FILE_TYPE          = 1
    GLOBAL % OUTPUT_TYPE        = 0
    GLOBAL % OUTPUT_ANIMATION   = 0
@@ -255,7 +255,8 @@ contains
       END DO
    ELSE
       STOP "SOLUTION MPPIO DATEI ÖFFNEN NOCH NCIHT IMPLEMENTIERT"
-
+      open(F_SOL,FILE=TRIM(GLOBAL% SOL_IN),FORM="UNFORMATTED",access="STREAM",STATUS="OLD")
+      close(F_SOL)
    END IF
 
    END SUBROUTINE
@@ -387,10 +388,6 @@ contains
    INTEGER :: BB, F , FF, FP , P
 
    LOGICAL :: FOUND
-
-   CHARACTER(LEN = 1) , PARAMETER :: FACES(6) = (/"W","E","S","N","B","F"/)
-
-   CHARACTER(LEN = 5) , PARAMETER :: FACENAME(6) = (/"WEST ","OST  ","SUED ","NORD ","BACK ","FRONT"/)
 
    INTEGER :: B,I,J,K,V
 
@@ -803,12 +800,18 @@ contains
 
    IMPLICIT NONE
    INTEGER :: SOLTIME
-
+   integer :: coord_var
    INTEGER, PARAMETER :: OUTUNIT = 10
    INTEGER :: N, V, I, J, K
-   IF (SOLTIME == 0) THEN
+   IF (SOLTIME <= 0) THEN
    OPEN(OUTUNIT,FILE="ani.plt",STATUS="REPLACE")
-   WRITE(OUTUNIT,'(A)',ADVANCE="NO") 'Variables = "X", "Y", "Z"'
+
+   WRITE(OUTUNIT,'(A)',ADVANCE="NO") 'Variables = "X", "Y"'
+
+   if (global % axsym == 2) then
+      WRITE(OUTUNIT,'(A)',ADVANCE="NO") ', "Z"'
+   end if
+
    DO v=1,GLOBAL%NVAR
     WRITE(OUTUNIT,'(3A)',ADVANCE="NO") ', "',TRIM(GLOBAL%VNAME(V)),'"'
    END DO
@@ -817,29 +820,48 @@ contains
    ELSE
    OPEN(OUTUNIT,FILE="ani.plt",STATUS="old")
    END IF
+
+   if (global % axsym == 2) then
+      coord_var = 4
+   else
+      coord_var = 3
+   end if
+
    DO N = 1, GLOBAL%NBLOCK
 
       WRITE(OUTUNIT,'(A,I0,A,I4,A,I4,A,I4)') 'ZONE,SOLUTIONTIME=',SOLTIME &
       ,' I=',BLOCKS(N)%NPI,', J=',BLOCKS(N)%NPJ,', K=',BLOCKS(N)%NPK
-      WRITE(OUTUNIT,'(A,I0,A)') 'DATAPACKING=BLOCK, VARLOCATION=([4-',GLOBAL%NVAR+4,']=CELLCENTERED)'
-      WRITE(OUTUNIT,'(5(D20.13,1X))') (UNSTR%XYZ(i,1),I = 1,UNSTR%NPKT)
-      WRITE(OUTUNIT,*)
-      WRITE(OUTUNIT,'(5(D20.13,1X))') (UNSTR%XYZ(i,2),I = 1,UNSTR%NPKT)
-      WRITE(OUTUNIT,*)
+      WRITE(OUTUNIT,'(A,I0,A,I0,A)',ADVANCE="NO") 'DATAPACKING=BLOCK, VARLOCATION=([',coord_var &
+               ,'-',GLOBAL%NVAR+coord_var,']=CELLCENTERED)'
+
+      do v = 1,coord_var-1
+         DO k = 1,BLOCKS(n) %  NPK
+            DO j = 1,BLOCKS(n) % NPJ
+               DO i= 1,BLOCKS(n) % NPI
+                  WRITE(OUTUNIT,'(5(D20.13,1X))') (BLOCKS(n) % XYZ(I,J,K,V))
+               END DO
+            END DO
+         END DO
+      end do
+
+!      WRITE(OUTUNIT,'(5(D20.13,1X))') (UNSTR%XYZ(i,1),I = 1,UNSTR%NPKT)
+!      WRITE(OUTUNIT,*)
+!      WRITE(OUTUNIT,'(5(D20.13,1X))') (UNSTR%XYZ(i,2),I = 1,UNSTR%NPKT)
+!      WRITE(OUTUNIT,*)
    !   WRITE(OUTUNIT,'(5(D20.13,1X))') (((BLOCKS(N)%XYZ(i,j,k,3),i=1,BLOCKS(N)%NPI) &
    !                                                               ,j=1,BLOCKS(N)%NPJ) &
    !                                                               ,k=1,BLOCKS(N)%NPK)
-      WRITE(OUTUNIT,'(5(D20.13,1X))')   (UNSTR%PKT_VAR(I,1),I = 1,UNSTR%NPKT)
-      WRITE(OUTUNIT,*)
+!      WRITE(OUTUNIT,'(5(D20.13,1X))')   (UNSTR%PKT_VAR(I,1),I = 1,UNSTR%NPKT)
+!      WRITE(OUTUNIT,*)
       DO v=1,GLOBAL%NVAR
          WRITE(OUTUNIT,'(5(D20.13,1X))') (((BLOCKS(N)%CVAR(i,j,k,v),i=1,BLOCKS(N)%NCI) &
                                                                    ,j=1,BLOCKS(N)%NCJ) &
                                                                    ,k=1,BLOCKS(N)%NCK)
          WRITE(OUTUNIT,*)
-         WRITE(OUTUNIT,'(5(D20.13,1X))') (((BLOCKS(N)%CVAR(i,j,k,v),i=1,BLOCKS(N)%NCI) &
-                                                                   ,j=1,BLOCKS(N)%NCJ) &
-                                                                   ,k=1,BLOCKS(N)%NCK)
-         WRITE(OUTUNIT,*)
+!         WRITE(OUTUNIT,'(5(D20.13,1X))') (((BLOCKS(N)%CVAR(i,j,k,v),i=1,BLOCKS(N)%NCI) &
+!                                                                   ,j=1,BLOCKS(N)%NCJ) &
+!                                                                   ,k=1,BLOCKS(N)%NCK)
+!         WRITE(OUTUNIT,*)
       END DO
    END DO
    END SUBROUTINE

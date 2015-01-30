@@ -68,7 +68,7 @@ END SUBROUTINE
       TEMP = 0.0D0
       IF (UNSTR % PKT_TYPE (P1) == 2 .NEQV. UNSTR % PKT_TYPE (P2) == 2) THEN
          IF (UNSTR % KNT_DN(U,1) > 1.D-1) THEN
-            TEMP = MIN(10.D0,(UNSTR % KNT_DN(U,1)-1.D-1) * 10)
+            TEMP = MIN(10.D0,(UNSTR % KNT_DN(U,1)-1.D-1) * 10.0D0)
          END IF
       END IF
       UNSTR % KNT_SPANNUNG(U,1) = UNSTR % KNT_SPANNUNG(U,1) + ABS(TEMP)! * UNSTR % KNT_DN(U,N+1))

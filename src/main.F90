@@ -44,6 +44,7 @@ program grid_adaption
 
    IF (Global % NITER == 0) THEN
       CALL CALC_GRID()
+      i = 1
    ELSE
       WRITE(*,'(A9,X,2(A12,x),A)') "ITERATION","RES_SUM","RES_MAX","@(B,I,J,K)"
 

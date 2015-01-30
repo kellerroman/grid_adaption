@@ -1,4 +1,4 @@
-MODULE TYPES
+MODULE TYPES_s2u
    TYPE :: TGLOBAL
       INTEGER :: AXSYM
       INTEGER :: NBLOCK
@@ -74,8 +74,8 @@ MODULE TYPES
    END TYPE
 END MODULE
 
-MODULE MOD_GLOBAL
-   USE TYPES
+MODULE MOD_GLOBAL_s2u
+   USE TYPES_s2u
    TYPE(TGLOBAL) :: GLOBAL
    TYPE(TBLOCKS), ALLOCATABLE :: BLOCKS(:)
    TYPE(TUNSTR) :: UNSTR
@@ -99,7 +99,7 @@ END MODULE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program sol2unstrpara
-   use mod_global
+   use mod_global_s2u
    implicit none
 
 
@@ -107,9 +107,6 @@ program sol2unstrpara
    CHARACTER(LEN=*),PARAMETER :: LAST_CHANGE = "14.01.2015"
 
 
-   INTEGER :: i
-   REAL(KIND=8) :: DN_SUM,DN_MAX
-   INTEGER :: DN_MAX_POS
 
    INTEGER :: ITER
    LOGICAL :: NEW_SOL
@@ -148,7 +145,7 @@ program sol2unstrpara
              ,"======================================================"
 end program
 SUBROUTINE INPUT_GRID()
-USE MOD_GLOBAL
+USE MOD_GLOBAL_s2u
 IMPLICIT NONE
 INTEGER, PARAMETER :: GIT_UNIT = 25
 
@@ -175,8 +172,6 @@ INTEGER :: BB, F , FF, FP , P
 LOGICAL :: FOUND
 
 CHARACTER(LEN = 1) , PARAMETER :: FACES(6) = (/"W","E","S","N","B","F"/)
-
-CHARACTER(LEN = 5) , PARAMETER :: FACENAME(6) = (/"WEST ","OST  ","SUED ","NORD ","BACK ","FRONT"/)
 
 
 INTEGER :: B,I,J,K,V
@@ -390,7 +385,7 @@ DEALLOCATE( PERM)
 END SUBROUTINE
 
 SUBROUTINE READ_SOL_HEADER()
-USE MOD_GLOBAL
+USE MOD_GLOBAL_s2u
 IMPLICIT NONE
 
 INTEGER :: IO_FILE_VERSION, DIMENSION_SOL, NBLOCK_SOL
@@ -426,7 +421,7 @@ END DO
 END SUBROUTINE READ_SOL_HEADER
 
 SUBROUTINE READ_SOL(ITER,NEW_SOL)
-USE MOD_GLOBAL
+USE MOD_GLOBAL_s2u
 IMPLICIT NONE
 LOGICAL, INTENT(OUT) :: NEW_SOL
 INTEGER, INTENT(OUT) :: ITER
@@ -452,7 +447,7 @@ END IF
 END SUBROUTINE READ_SOL
 
 SUBROUTINE STR2UNSTR()
-   USE MOD_GLOBAL
+   USE MOD_GLOBAL_s2u
    IMPLICIT NONE
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !
@@ -462,8 +457,6 @@ SUBROUTINE STR2UNSTR()
    INTEGER :: N,I,J,K,U,L
    LOGICAL :: IS_OLD_NODE,DO_CONNECT_I,DO_CONNECT_J
    INTEGER :: MYPKT, MYKNT, NPKT
-
-   INTEGER :: I_U,I_D,J_U,J_D
 
    INTEGER :: NUMBER_OF_FACES,NACHBAR,F
 
@@ -883,9 +876,9 @@ IF (Global%CHECK_FOR_DOUBLE_POINTS==1) THEN
    DO U = 1, UNSTR% NPKT
       DO N = 1, UNSTR % NPKT
          IF (U == N) CYCLE
-         IF   (ABS(UNSTR % XYZ (U,1) - UNSTR % XYZ (N,1)) <= 1E-9 &
-         .AND. ABS(UNSTR % XYZ (U,2) - UNSTR % XYZ (N,2)) <= 1E-9 &
-         .AND. ABS(UNSTR % XYZ (U,3) - UNSTR % XYZ (N,3)) <= 1E-9 ) THEN
+         IF   (ABS(UNSTR % XYZ (U,1) - UNSTR % XYZ (N,1)) <= 1D-9 &
+         .AND. ABS(UNSTR % XYZ (U,2) - UNSTR % XYZ (N,2)) <= 1D-9 &
+         .AND. ABS(UNSTR % XYZ (U,3) - UNSTR % XYZ (N,3)) <= 1D-9 ) THEN
 
             WRITE(*,'("KONTEN ",I0," UND ",I0," SIND DOPPELT VORHANDEN. KOORD: ",3(F10.7,X))') u,n, UNSTR % XYZ (N,1:3)
 
@@ -971,7 +964,7 @@ END IF
 #endif
 END SUBROUTINE
 SUBROUTINE PARAVIEW_OUTPUT()
-    use mod_global
+    use mod_global_s2u
     implicit none
 CHARACTER(LEN=20) :: FILENAME
     INTEGER :: I,J,K,u,B
@@ -1024,7 +1017,7 @@ CHARACTER(LEN=20) :: FILENAME
 end subroutine
 
 SUBROUTINE PARAVIEW_OUTPUT_UNSTR(ITER)
-   use mod_global
+   use mod_global_s2u
    implicit none
 
    INTEGER :: ITER

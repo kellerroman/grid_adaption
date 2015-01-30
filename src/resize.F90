@@ -43,7 +43,7 @@ IF ( GLOBAL % NODE_MOVEMENT == 2) THEN
             if (UNSTR % KNT(KN,1) == U ) THEN
                teilen = UNSTR % KNT_DN(KN,1)
             ELSE
-               teilen = UNSTR % KNT_DN(KN,1) * -1.0D0
+               teilen = - UNSTR % KNT_DN(KN,1)
             END IF
 
 
