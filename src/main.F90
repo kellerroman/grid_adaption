@@ -27,7 +27,7 @@ program grid_adaption
    CHARACTER(LEN=*),PARAMETER :: LAST_CHANGE = "28.01.2015"
 
 
-   INTEGER :: i
+   INTEGER :: i,k
    REAL(KIND=8) :: DN_SUM,DN_MAX
    INTEGER :: DN_MAX_POS
 
@@ -68,7 +68,6 @@ program grid_adaption
          CALL CALC_SCHIEBESPANNUNG()
 
          CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
-
 
          IF (I < 50 .OR. MOD(I,GLOBAL % NITER_OUTPUT) == 0 ) THEN
             WRITE(*,'(X,I8,X,2(D12.5,X),"@",I0," (",4(I0,X),")")') I,DN_SUM &

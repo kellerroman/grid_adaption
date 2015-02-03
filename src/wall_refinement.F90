@@ -20,7 +20,7 @@ REAL(KIND = DP), ALLOCATABLE,SAVE      :: PKT_DXY(:,:)
 !< für Type = 2 und 3 sehr einfach, da in x bzw y Richtung
 !< 1 Parameter ist Punkt_ID , zweiter Dimension
 
-REAL(KIND = DP), PARAMETER             :: MAX_INC = 1.001D+0
+REAL(KIND = DP), PARAMETER             :: MAX_INC = 1.01D+0
 REAL(KIND = DP), PARAMETER             :: MIN_INC = 0.995D+0
 REAL(KIND = DP),save                   :: WALL_DIST
 
@@ -187,7 +187,7 @@ contains
 
          allocate(KNT_FORCE(NKNT))
 
-         KNT_FORCE = 1.0D-5
+         KNT_FORCE = 1.0D-3
          do i = 1,NKNT
             KNT(i) = KAW(i)
          end do
@@ -518,7 +518,7 @@ contains
       REAL(KIND=8) :: sp(4)
       integer :: sort(4)
 
-      if (global % wall_refinement > 0) then
+      do_wall_refinement: if (global % wall_refinement > 0) then
 #ifdef DEBUG
          IF (GLOBAL%DBG >= 1)  THEN
             WRITE(*,'(A)') "WANDVERFEINERUNG"
@@ -559,6 +559,7 @@ contains
                ipos  = unstr % xyz(p1,1:2) + PKT_DXY(I,:)
                fvec   = ipos - unstr % xyz(p2,1:2)
                abs_fvec =  sqrt(fvec(1)*fvec(1)+fvec(2)*fvec(2))
+               UNSTR % PKT_SOLL(p2,:) = fvec
                fvec = fvec / abs_fvec
                nedge = unstr % PKT_NKNT(p2)
 
@@ -594,21 +595,32 @@ contains
 !               write(*,'(3(ES12.5,X))') (evec(k,:),sp(k),k=1,nedge)
                ! edge_vector == force vector (normiert)
                ! kraft wird einfach auf diese eine edge berechnet
-               if (sp(sort(1)) >= 9.0D-1) then
-                  is2should = abs_fvec
+!               if (sp(sort(1)) >= 9.0D-1) then
+
+                  is2should = abs_fvec / wall_dist
+
+                  is2should = MIN(MAX_INC, is2should)
+
+                  is2should = MAX(MIN_INC, is2should)
+
+                  KNT_FORCE(i) = KNT_FORCE(i) * is2should
 
                   UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) =  &
-                  UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) + abs_fvec
-               else
-                  write(*,*) p1,sp(sort(1:nedge))
-
-                  stop "Muss Kraftvektor aufteilen"
-               end if
+                  UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) + abs_fvec!KNT_FORCE(i)
+!               else
+!                  write(*,*) p1,sp(sort(1:nedge))
+!
+!                  stop "Muss Kraftvektor aufteilen"
+!               end if
             end do
 !            stop
          end if
+      i = 222
+      nedge = UNSTR % PKT_NKNT(i)
+!      write(*,*) (UNSTR % PKT_NEIGH(i,k),k = 1,nedge)
+      write(*,'(I5.5,4(X,ES12.5))') i,(UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(i,k),1),k = 1,nedge)
 
-      end if
+      end if do_wall_refinement
    END SUBROUTINE calc_wall_refinement
 
    subroutine check_wall_refinement()
@@ -617,35 +629,42 @@ contains
    integer :: i,k
    REAL(KIND=8) :: FAKTOR
    logical :: unideal_edges
-   if (GLOBAL % WALL_REFINEMENT_CHECK == 1) then
-      write(*,'(A6,X,A12,X,A12)') "EDGE#","LENGTH","FORCE"
-      do i = 1, NKNT
-         k = KNT(i)
-         write(*,'(I6.6,X,ES12.5,X,ES12.5)') k,UNSTR % KNT_DN(k,1), KNT_FORCE(i)
-      end do
-   else if (GLOBAL % WALL_REFINEMENT_CHECK == 2) then
-   !!! ES WERDEN NUR KANTEN MIT EINER ABWEICHUNG VON 10% AUSGEGEBEN
-      unideal_edges = .FALSE.
-      !! ÜBERPRÜFEN OB ES ÜBERhAUPT NOCH EDGES GIBT DIE SO STARK ABWEICHEN
-      do i = 1, NKNT
-         k = KNT(i)
-         FAKTOR = ABS(UNSTR % KNT_DN(k,1) / wall_dist)
-         if (FAKTOR < 0.9D0 .OR. FAKTOR >1.1D0) then
-            unideal_edges = .TRUE.
-            exit
-         end if
-      end do
-      !!! AUSGABE DER ABWEICHENDEN EDGES
-      if (unideal_edges) then
+   if (GLOBAL % WALL_REFINEMENT == 1) then
+      if (GLOBAL % WALL_REFINEMENT_CHECK == 1) then
          write(*,'(A6,X,A12,X,A12)') "EDGE#","LENGTH","FORCE"
+         do i = 1, NKNT
+            k = KNT(i)
+            write(*,'(I6.6,X,ES12.5,X,ES12.5)') k,UNSTR % KNT_DN(k,1), KNT_FORCE(i)
+         end do
+      else if (GLOBAL % WALL_REFINEMENT_CHECK == 2) then
+      !!! ES WERDEN NUR KANTEN MIT EINER ABWEICHUNG VON 10% AUSGEGEBEN
+         unideal_edges = .FALSE.
+         !! ÜBERPRÜFEN OB ES ÜBERhAUPT NOCH EDGES GIBT DIE SO STARK ABWEICHEN
          do i = 1, NKNT
             k = KNT(i)
             FAKTOR = ABS(UNSTR % KNT_DN(k,1) / wall_dist)
             if (FAKTOR < 0.9D0 .OR. FAKTOR >1.1D0) then
-               write(*,'(I6.6,X,ES12.5,X,ES12.5)') k,UNSTR % KNT_DN(k,1), KNT_FORCE(i)
+               unideal_edges = .TRUE.
+               exit
             end if
          end do
+         !!! AUSGABE DER ABWEICHENDEN EDGES
+         if (unideal_edges) then
+            write(*,'(A6,X,A12,X,A12)') "EDGE#","LENGTH","FORCE"
+            do i = 1, NKNT
+               k = KNT(i)
+               FAKTOR = ABS(UNSTR % KNT_DN(k,1) / wall_dist)
+               if (FAKTOR < 0.9D0 .OR. FAKTOR >1.1D0) then
+                  write(*,'(I6.6,X,ES12.5,X,ES12.5)') k,UNSTR % KNT_DN(k,1), KNT_FORCE(i)
+               end if
+            end do
+         end if
       end if
+   else
+!      do i = 1, NKNT
+!      write(*,'(I6.6,X,ES12.5,X,ES12.5)') i,KNT_FORCE(i)
+!      end do
+
    end if
    end subroutine check_wall_refinement
 end module wall_refinement

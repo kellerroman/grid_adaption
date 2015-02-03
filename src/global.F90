@@ -48,9 +48,9 @@ MODULE TYPES
 !< (IN ANLEHNUNG AN rabe.dat)
       INTEGER :: WALL_REFINEMENT_CHECK
 !< PARAMETER, das bei jeder RESIDUEN Ausgabe auch alle WANDKNOTENLÄNGE ausgegebebne werden
-      REAL(KIND=8) :: WEIGHT = 1.0D0/10.0D0
 
       REAL(KIND=8) :: FAKTOR
+
       CHARACTER(LEN=100) :: GIT_IN
       CHARACTER(LEN=100) :: SOL_IN
       CHARACTER(LEN=100) :: GIT_OUT
@@ -124,7 +124,8 @@ MODULE TYPES
       REAL(KIND=8),ALLOCATABLE      :: KNT_SPANNUNG(:,:)         !
 
 !      INTEGER, ALLOCATABLE :: PKT_IS
-
+      REAL(KIND=8),ALLOCATABLE      :: PKT_DN(:,:)
+      REAL(KIND=8),ALLOCATABLE      :: PKT_SOLL(:,:)
    END TYPE
 END MODULE
 

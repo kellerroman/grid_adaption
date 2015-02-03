@@ -59,25 +59,25 @@ contains
    INTEGER, PARAMETER :: IO_CF = 20
    LOGICAL :: FEXISTS
 
-   CONTROL_FILE = "input.cfg"
+   CONTROL_FILE                           = "input.cfg"
 
-   GLOBAL % GIT_IN             = "git.dat"
-   GLOBAL % SOL_IN             = "avarout.ufo"
-   GLOBAL % GIT_OUT            = "git_out.dat"
-   GLOBAL % SOL_OUT            = "avarout_out.ufo"
-   GLOBAL % DBG                = 0
-   GLOBAL % NITER              = 0
-   GLOBAL % NITER_OUTPUT       = 100
-   GLOBAL % FAKTOR             = 0.5D0
-   GLOBAL % FILE_TYPE          = 1
-   GLOBAL % OUTPUT_TYPE        = 0
-   GLOBAL % OUTPUT_ANIMATION   = 0
-   GLOBAL % CHECK_FOR_DOUBLE_POINTS = 1
-   GLOBAL % CHECK_FOR_DOUBLE_KANTEN = 1
-   GLOBAL % NODE_MOVEMENT_MECHNISM  = 1
-   GLOBAL % WALL_REFINEMENT = 0
-   GLOBAL % WALL_REFINEMENT_CHECK = 0
-   GLOBAL % WALL_REFINEMENT_FILE = "randbed.dat"
+   GLOBAL % GIT_IN                        = "git.dat"
+   GLOBAL % SOL_IN                        = "avarout.ufo"
+   GLOBAL % GIT_OUT                       = "git_out.dat"
+   GLOBAL % SOL_OUT                       = "avarout_out.ufo"
+   GLOBAL % DBG                           = 0
+   GLOBAL % NITER                         = 0
+   GLOBAL % NITER_OUTPUT                  = 100
+   GLOBAL % FAKTOR                        = 0.5D0
+   GLOBAL % FILE_TYPE                     = 1
+   GLOBAL % OUTPUT_TYPE                   = 0
+   GLOBAL % OUTPUT_ANIMATION              = 0
+   GLOBAL % CHECK_FOR_DOUBLE_POINTS       = 1
+   GLOBAL % CHECK_FOR_DOUBLE_KANTEN       = 1
+   GLOBAL % NODE_MOVEMENT_MECHNISM        = 1
+   GLOBAL % WALL_REFINEMENT               = 0
+   GLOBAL % WALL_REFINEMENT_CHECK         = 0
+   GLOBAL % WALL_REFINEMENT_FILE          = "randbed.dat"
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !
    !                            KOMMANDOZEILE AUSLESEN
@@ -834,6 +834,8 @@ contains
    if (global % axsym == 2) then
       WRITE(OUTUNIT,'(A)',ADVANCE="NO") ', "Z"'
    end if
+   WRITE(OUTUNIT,'(A)',ADVANCE="NO") ', "Dx"'
+   WRITE(OUTUNIT,'(A)',ADVANCE="NO") ', "Dy"'
 
    DO v=1,GLOBAL%NVAR
     WRITE(OUTUNIT,'(3A)',ADVANCE="NO") ', "',TRIM(GLOBAL%VNAME(V)),'"'
@@ -850,12 +852,12 @@ contains
       coord_var = 3
    end if
 
-   DO N = 1, GLOBAL%NBLOCK
+   LOOP_BLOCKS: DO N = 1, GLOBAL%NBLOCK
 
       WRITE(OUTUNIT,'(A,I0,A,I4,A,I4,A,I4)') 'ZONE,SOLUTIONTIME=',SOLTIME &
       ,' I=',BLOCKS(N)%NPI,', J=',BLOCKS(N)%NPJ,', K=',BLOCKS(N)%NPK
-      WRITE(OUTUNIT,'(A,I0,A,I0,A)',ADVANCE="NO") 'DATAPACKING=BLOCK, VARLOCATION=([',coord_var &
-               ,'-',GLOBAL%NVAR+coord_var,']=CELLCENTERED)'
+      WRITE(OUTUNIT,'(A,I0,A,I0,A)',ADVANCE="NO") 'DATAPACKING=BLOCK, VARLOCATION=([',coord_var+2 &
+               ,'-',GLOBAL%NVAR+coord_var+2,']=CELLCENTERED)'
 
       do v = 1,coord_var-1
          DO k = 1,BLOCKS(n) %  NPK
@@ -866,6 +868,16 @@ contains
             END DO
          END DO
       end do
+      DO v= 1,2
+         DO k = 1,BLOCKS(n) %  NPK
+            DO j = 1,BLOCKS(n) % NPJ
+               DO i= 1,BLOCKS(n) % NPI
+                  WRITE(OUTUNIT,'(5(D20.13,1X))') UNSTR % PKT_SOLL(BLOCKS(n) % ASSOC(I,J,K),V)
+               END DO
+            END DO
+         END DO
+      END DO
+
 
 !      WRITE(OUTUNIT,'(5(D20.13,1X))') (UNSTR%XYZ(i,1),I = 1,UNSTR%NPKT)
 !      WRITE(OUTUNIT,*)
@@ -886,7 +898,7 @@ contains
 !                                                                   ,k=1,BLOCKS(N)%NCK)
 !         WRITE(OUTUNIT,*)
       END DO
-   END DO
+   END DO LOOP_BLOCKS
    END SUBROUTINE
 
    SUBROUTINE OUTPUT_GRID()
