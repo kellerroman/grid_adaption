@@ -292,6 +292,10 @@ contains
                else if (UNSTR % PKT_TYPE(PKT_CTW(i)) == 4) then
                   PKT_DXY(I,1) = 0.0D0
                   PKT_DXY(I,2) = SIGN(WALL_DIST,UNSTR % XYZ(PKT_CTW(I),2)-UNSTR % XYZ(PKT_AW(I),2))
+               else if (UNSTR % PKT_TYPE(PKT_CTW(i)) == 2) then
+                  write(*,*) "ERROR in wall_refinement_init"
+                  write(*,*) "NODE",PKT_CTW(i),"is fixed and cannot be moved"
+                  stop
                else
                   if (ABS(UNSTR % XYZ(PKT_CTW(I),1)-UNSTR % XYZ(PKT_AW(I),1)) < 1D-10) then
                      !!!! WAAGRECHTE WAND
@@ -304,7 +308,8 @@ contains
                   else
 
                      write(*,'(3(I6,X),I1,2(X,ES12.5))') i,pkt_aw(i),pkt_ctw(i),TYP,PKT_DXY(I,1),PKT_DXY(I,2)
-                     write(*,*) "Init Wall Refinement: Wanddelta nicht berechnen"
+                     write(*,*) "ERROR in wall_refinement_init"
+                     write(*,*) "Init Wall Refinement: ideal Wanddelta cannot be calculated"
                      stop
                   end if
                end if
@@ -502,11 +507,12 @@ contains
 
       integer :: nedge
       !< Anzahl der kanten
-      REAL(KIND=8) :: TEMP
+      REAL(KIND=8) :: is2should
       REAL(KIND=8) :: ipos(2)
 
       REAL(KIND=8) :: fvec(2)
       !< force vector
+      REAL(KIND=8) :: abs_fvec
       REAL(KIND=8) :: evec(4,2)
       !< edge vector
       REAL(KIND=8) :: sp(4)
@@ -531,16 +537,16 @@ contains
          if (GLOBAL % WALL_REFINEMENT == 1) then
             do i = 1,NKNT
                k = KNT(i)
+               is2should = UNSTR % KNT_DN(k,1) / wall_dist
 
-               TEMP = UNSTR % KNT_DN(k,1) / wall_dist
+               is2should = MIN(MAX_INC, is2should)
 
-               TEMP = MIN(MAX_INC, TEMP)
+               is2should = MAX(MIN_INC, is2should)
 
-               TEMP = MAX(MIN_INC, TEMP)
-
-               KNT_FORCE(i) = KNT_FORCE(i) * TEMP
+               KNT_FORCE(i) = KNT_FORCE(i) * is2should
 
                UNSTR % KNT_SPANNUNG(k,1) = UNSTR % KNT_SPANNUNG(k,1) + KNT_FORCE(i)
+
             end do
          !!
          !! DIESE ART DER WANDVERFEINERUNG VERSUCHT ORTHOGONALE WANDABSTÄNDE HERZUSTELLEN IDEM DER WANDNÄCHSTE PUNKT
@@ -552,6 +558,8 @@ contains
                p2    = PKT_CTW(I)
                ipos  = unstr % xyz(p1,1:2) + PKT_DXY(I,:)
                fvec   = ipos - unstr % xyz(p2,1:2)
+               abs_fvec =  sqrt(fvec(1)*fvec(1)+fvec(2)*fvec(2))
+               fvec = fvec / abs_fvec
                nedge = unstr % PKT_NKNT(p2)
 
                do k = 1, nedge
@@ -565,6 +573,7 @@ contains
                   sp(k) = dot_product(fvec,evec(k,:))
                   sort(k) = k
                   e = k+1
+                  ! SORTIEREN DER ede_vectoren zum einfachsten kombinieren des force vectors
                   if (k > 1) then
                      do
                         e = e-1
@@ -580,13 +589,25 @@ contains
                   end if
 
                end do
-               write(*,*) sort(1:4)
-               write(*,'(6(ES12.5,X))') unstr % xyz(p2,1:2), ipos,fvec
-               write(*,'(3(ES12.5,X))') (evec(k,:),sp(k),k=1,nedge)
+!               write(*,*) sort(1:nedge)
+!               write(*,'(6(ES12.5,X))') unstr % xyz(p2,1:2), ipos,fvec
+!               write(*,'(3(ES12.5,X))') (evec(k,:),sp(k),k=1,nedge)
+               ! edge_vector == force vector (normiert)
+               ! kraft wird einfach auf diese eine edge berechnet
+               if (sp(sort(1)) >= 9.0D-1) then
+                  is2should = abs_fvec
 
+                  UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) =  &
+                  UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) + abs_fvec
+               else
+                  write(*,*) p1,sp(sort(1:nedge))
+
+                  stop "Muss Kraftvektor aufteilen"
+               end if
             end do
-            stop
+!            stop
          end if
+
       end if
    END SUBROUTINE calc_wall_refinement
 
