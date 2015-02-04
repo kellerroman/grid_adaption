@@ -6,7 +6,7 @@ gridgen: gridgen.F90
 
 .PHONY: run gridgen clean
 clean:
-	@rm -f git.bin gridgen *~  *.vtk
+	@rm -f git.bin gridgen *~  *.vtk *.plt
 
 paraview: run
 	../../../bin/sol2para -git
