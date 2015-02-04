@@ -618,7 +618,7 @@ contains
       i = 222
       nedge = UNSTR % PKT_NKNT(i)
 !      write(*,*) (UNSTR % PKT_NEIGH(i,k),k = 1,nedge)
-      write(*,'(I5.5,4(X,ES12.5))') i,(UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(i,k),1),k = 1,nedge)
+!      write(*,'(I5.5,4(X,ES12.5))') i,(UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(i,k),1),k = 1,nedge)
 
       end if do_wall_refinement
    END SUBROUTINE calc_wall_refinement
