@@ -111,7 +111,7 @@ program sol2unstrpara
    INTEGER :: ITER
    LOGICAL :: NEW_SOL
 
-   GLOBAL % GIT_IN             = "grid.bin"
+   GLOBAL % GIT_IN             = "git.bin"
    GLOBAL % SOL_IN             = "sol.ufo.bin"
    GLOBAL % CHECK_FOR_DOUBLE_POINTS = 1
    GLOBAL % CHECK_FOR_DOUBLE_KANTEN = 1
