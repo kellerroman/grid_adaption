@@ -9,7 +9,7 @@ INTEGER              :: DN_MAX_POS
 
 INTEGER :: DIM, U, K, KN, P1
 
-INTEGER :: I, J, N, UP
+INTEGER :: N
 
 
 REAL(KIND=8) :: teilen
@@ -101,7 +101,7 @@ END IF
 
 DN_SUM = 0.0D+00
 DN_MAX = -1.0D+00
-DN_MAX_POS = -1
+DN_MAX_POS = 1
 DO U = 1,UNSTR%NPKT
    N = UNSTR % PKT_TYPE(U)
    IF (N == 1 .OR. N == 3 ) THEN!( I > 1 .AND. I < BLOCKS(N) % NPI) THEN

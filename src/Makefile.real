@@ -15,7 +15,7 @@ _SOURCES= global.F90 \
           init.F90 \
           wall_refinement.F90 \
           utils.F90 \
-          calc_schiebespannung.F90 
+          edge_stress.F90 
 
 SOURCES = $(patsubst %,$(SOURCE_DIR)/%,$(_SOURCES))
 OBJECTS=$(_SOURCES:.F90=.o)
@@ -43,6 +43,9 @@ init.o:	$(SOURCE_DIR)/init.F90 global.o grid.o
 wall_refinement.o: $(SOURCE_DIR)/wall_refinement.F90 global.o utils.o
 	$(FC) -c $(CFLAGS) $< -o $@	
 	
+edge_stress.o: $(SOURCE_DIR)/edge_stress.F90 global.o utils.o wall_refinement.o
+	$(FC) -c $(CFLAGS) $< -o $@   
+   	
 utils.o: $(SOURCE_DIR)/utils.F90 global.o
 	$(FC) -c $(CFLAGS) $< -o $@	
 	

@@ -20,6 +20,7 @@ program grid_adaption
    use grid
    use init_mod, only: init
    use wall_refinement, only: check_wall_refinement
+   use edge_stress
    implicit none
 
 
@@ -27,7 +28,7 @@ program grid_adaption
    CHARACTER(LEN=*),PARAMETER :: LAST_CHANGE = "28.01.2015"
 
 
-   INTEGER :: i,k
+   INTEGER :: i
    REAL(KIND=8) :: DN_SUM,DN_MAX
    INTEGER :: DN_MAX_POS
 
@@ -65,7 +66,7 @@ program grid_adaption
             END IF
          END IF
 
-         CALL CALC_SCHIEBESPANNUNG()
+         CALL CALC_EDGE_STRESSES()
 
          CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
 
