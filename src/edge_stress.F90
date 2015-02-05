@@ -8,18 +8,23 @@ SUBROUTINE CALC_EDGE_STRESSES()
    USE CONST
    use wall_refinement, only: calc_wall_refinement
    implicit none
-
+   integer :: i
    UNSTR%KNT_SPANNUNG(:,2) = UNSTR%KNT_SPANNUNG(:,1)
 
    CALL ELLIPTIC_GRID_SMOOTHNING()
 
    CALL cell_inc()
 
-
-
    call calc_wall_refinement()
 
-
+   do i = 1, UNSTR % NKNT
+      if (UNSTR % KNT_SPANNUNG(i,1) > 1.0D5) then
+         write(*,*) "WARNING in calc_edge_stresses"
+         write(*,*) "Convergence Problems: Edge Stress too high"
+         write(*,*) i,UNSTR % KNT_SPANNUNG(i,1)
+         UNSTR % KNT_SPANNUNG(i,1) = 1.0D5
+      end if
+   end do
 
 END SUBROUTINE CALC_EDGE_STRESSES
 
