@@ -10,6 +10,7 @@ contains
       use const, only: dp
       use grid, only: calc_schwerpunkte, str2unstr
       use wall_refinement, only: init_wall_refinement
+      use edge_stress, only: init_edge_stretch
       implicit none
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
@@ -18,9 +19,6 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       INTEGER :: NUMBER_OF_FACES,B,F
       CHARACTER(LEN = 1) , PARAMETER :: FACES(6) = (/"W","E","S","N","B","F"/)
-
-
-
 
       IF (GLOBAL % AXSYM == 2) THEN
          NUMBER_OF_FACES = 6
@@ -51,13 +49,13 @@ contains
          WRITE(*,*)
       END DO
 
-
       CALL CALC_SCHWERPUNKTE()
 
       CALL STR2UNSTR()
 
-!         CALL INIT_BOUNDARY() !INITIALISIERUNG DER BOUNDARY KNOTEN
       CALL INIT_WALL_REFINEMENT() !INITIALISIERUNG DER BOUNDARY KNOTEN
+
+      CALL INIT_EDGE_STRETCH
 
    end subroutine init
 

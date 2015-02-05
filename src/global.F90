@@ -125,8 +125,10 @@ MODULE TYPES
 
 !      INTEGER, ALLOCATABLE :: PKT_IS
       REAL(KIND=8),ALLOCATABLE      :: PKT_DN(:,:)
+!< Verschiebungsvektor des Knoten ID,DIM
       REAL(KIND=8),ALLOCATABLE      :: PKT_SOLL(:,:)
-      REAL(KIND=8),ALLOCATABLE      :: CELL_INC_STRESS(:)
+!< Für WAndverfeinerung: Soll position des Wandnächsten Punktes
+
    END TYPE
 END MODULE
 

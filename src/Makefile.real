@@ -37,7 +37,7 @@ io.o: $(SOURCE_DIR)/io.F90 grid.o global.o utils.o wall_refinement.o
 grid.o:	$(SOURCE_DIR)/grid.F90 global.o
 	$(FC) -c $(CFLAGS) $< -o $@
 
-init.o:	$(SOURCE_DIR)/init.F90 global.o grid.o
+init.o:	$(SOURCE_DIR)/init.F90 global.o grid.o edge_stress.o
 	$(FC) -c $(CFLAGS) $< -o $@	
 	
 wall_refinement.o: $(SOURCE_DIR)/wall_refinement.F90 global.o utils.o
