@@ -93,7 +93,7 @@ DO P = 1, UNSTR % NPKT
 !                write(*,*) P,K,K1,lenge(K),lenge(K1)
 !                write(*,*) winkel(k),winkel(k1)
 !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%KNT_SPANNUNG(KN,2) * 1.0D0/seitenver
-               UNSTR%CELL_INC_STRESS(KN1)   = MAX(1E-5,UNSTR%CELL_INC_STRESS(KN1)) * 1.01D0
+               UNSTR%CELL_INC_STRESS(KN1)   = MAX(1D-5,UNSTR%CELL_INC_STRESS(KN1)) * 1.01D0
             else if ( lenge(K1) / lenge(K) > seitenver*0.9D0 ) then
             else if (lenge(K1) >= lenge(K) ) then
 !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%CELL_INC_STRESS(KN1) * 0.95D0
@@ -105,7 +105,7 @@ DO P = 1, UNSTR % NPKT
 !                write(*,*) P,K,K1,lenge(K),lenge(K1)
 !                write(*,*) winkel(k),winkel(k1)
 !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%KNT_SPANNUNG(KN,2) * 1.0D0/seitenver
-               UNSTR%CELL_INC_STRESS(KN)   = MAX(1E-5,UNSTR%CELL_INC_STRESS(KN)) * 1.01D0
+               UNSTR%CELL_INC_STRESS(KN)   = MAX(1D-5,UNSTR%CELL_INC_STRESS(KN)) * 1.01D0
             else if ( lenge(K) / lenge(K1) > seitenver*0.9D0 ) then
             else if (lenge(K) >= lenge(K1) ) then
 !               UNSTR%CELL_INC_STRESS(KN)   = UNSTR%CELL_INC_STRESS(KN) * 0.95D0
