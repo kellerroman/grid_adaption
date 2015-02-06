@@ -13,4 +13,4 @@ gridgen: gridgen.F90
 #	~/daten/Promotion/TOOLS/bin/git_ascii2bin
 
 clean:
-	rm -f *.vtk *.bin *.dat *.pyc gridgen
+	rm -f *.vtk *.bin *.dat *.pyc gridgen *.plt
