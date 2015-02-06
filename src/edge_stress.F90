@@ -156,29 +156,72 @@ contains
    CELL_INC_STRESS = 1.0D-10
 
    allocate( knt_nneigh ( UNSTR % NKNT   ) )
-   allocate( knt_neigh  ( UNSTR % NKNT ,2) )
+   allocate( knt_neigh  ( UNSTR % NKNT ,3) )
    ! INITIALISERUNG DER ANZAHL DER RELEVANTEN KNOTEN MIT 0
    KNT_NNEIGH = 0
 !   goto 666
+
+   !!! ES WIRD ÜBER BLOCKGRENZEN IMMER NUR "ZURÜCK" nicht nach vorne geschaut
+   !!! um doppelte referenzen zu verhindern
+   !!! d.h. schlefen laufen bis NCX
+   !!! I/J/K + 1 ist unkritisch
    block_loop: do b = 1, GLOBAL % NBLOCK
-      kdir_loop: do k = 1, BLOCKS(B) % NPK
-         jdir_loop: do j = 1, BLOCKS(B) % NPJ
+      kdir_loop: do k = 1, BLOCKS(B) % NCK
+         jdir_loop: do j = 1, BLOCKS(B) % NCJ
             idir_loop: do i = 1, BLOCKS(B) % NCI
                dir_loop: do dir = 1,2
                   if (dir == 1) then !!!!!! I-DIR
                      if (i == 1) then
                         if (BLOCKS(B) % BLOCK_CONNECTION(1,1) > 0) then
                            b2 = BLOCKS(B) % BLOCK_CONNECTION(1,1)
-                           if  (BLOCKS(B) % BLOCK_CONNECTION(1,2) == 1 &
+                           if  (BLOCKS(B) % BLOCK_CONNECTION(1,2) == 2 &
                            .AND.BLOCKS(B) % BLOCK_CONNECTION(1,3) == 1) then
-                              i2 = BLOCKS(B2) % NPI
+                              i2 = BLOCKS(B2) % NCI !!NPI -1
                               j2 = j
                               k2 = k
                            else
-                              write(*,'(4(A,X,I0,X))') "Block",B &
+                              write(*,'(5(A,X,I0,X))') "Block i-Dir",B &
                                         ,"to",B2   &
                                         ,"@FACE:",BLOCKS(B) % BLOCK_CONNECTION(1,2) &
                                         ,"MUTATION",BLOCKS(B) % BLOCK_CONNECTION(1,3)
+
+
+                              STOP "ERROR in INIT_EDGE_STRETCH: Phase-Con not impl"
+                           end if
+                        else
+                           cycle dir_loop !! kein block angeschlossen
+                        end if
+                     else
+                        b2 = b
+                        i2 = i - 1
+                        j2 = j
+                        k2 = k
+                     end if
+
+                     b3 = b
+                     i3 = i + 1
+                     j3 = j
+                     k3 = k
+
+                  else if (dir == 2) then
+                     if (j == 1) then
+                        if (BLOCKS(B) % BLOCK_CONNECTION(3,1) > 0) then
+                           b2 = BLOCKS(B) % BLOCK_CONNECTION(3,1)
+                           if  (BLOCKS(B) % BLOCK_CONNECTION(3,2) == 4 &
+                           .AND.BLOCKS(B) % BLOCK_CONNECTION(3,3) == 1) then
+                              i2 = i
+                              j2 = BLOCKS(B2) % NCJ !!NPJ -1
+                              k2 = k
+                           else if  (BLOCKS(B) % BLOCK_CONNECTION(3,2) == 2 &
+                           .AND.BLOCKS(B) % BLOCK_CONNECTION(3,3) == 2) then
+                              i2 = BLOCKS(B2) % NCI
+                              j2 = BLOCKS(B2) % NPJ - I + 1
+                              k2 = k
+                           else
+                              write(*,'(4(A,X,I0,X))') "Block j-Dir",B &
+                                        ,"to",B2   &
+                                        ,"@FACE:",BLOCKS(B) % BLOCK_CONNECTION(3,2) &
+                                        ,"MUTATION",BLOCKS(B) % BLOCK_CONNECTION(3,3)
 
                               STOP "ERROR in INIT_EDGE_STRETCH: Phase-Con not impl"
                            end if
@@ -187,25 +230,16 @@ contains
                         end if
                      else
                         b2 = b
-                        i2 = i - 1
-                        j2 = j
+                        i2 = i
+                        j2 = j - 1
                         k2 = k
                      end if
-                     b3 = b
-                     i3 = i + 1
-                     j3 = j
-                     k3 = k
-                  else if (dir == 2) then
-                     if (j == 1) cycle dir_loop
-                     b2 = b
-                     i2 = i
-                     j2 = j - 1
-                     k2 = k
 
                      b3 = b
                      i3 = i
                      j3 = j + 1
                      k3 = k
+
                   else
                      STOP "INIT_EDGE_STRETCH 3D not implemented yet"
                   end if
@@ -229,9 +263,19 @@ contains
                      knt_nneigh(e1) = knt_nneigh(e1) + 1
                      knt_nneigh(e2) = knt_nneigh(e2) + 1
 
+                     if (knt_nneigh(e1) > 3) then
+                        write(*,*) "E1",knt_nneigh(e1), p,p2,p3,e1, e2
+                        stop
+                     end if
+                     if (knt_nneigh(e2) > 3) then
+                        write(*,*) "E2",knt_nneigh(e2), p,p2,p3,e2, e1
+                        stop
+                     end if
+
                      knt_neigh(e1, knt_nneigh(e1)) = e2
                      knt_neigh(e2, knt_nneigh(e2)) = e1
                   else
+                     write(*,*)
                      STOP "ERROR in INIT_EDGE_STRETCH: could not find egdes"
                   end if
                end do dir_loop
@@ -239,9 +283,9 @@ contains
          end do jdir_loop
       end do kdir_loop
    end do block_loop
-   write(*,'(5(A5,X))') "KNT", "P1","P2","NEI1","NEI2"
+   write(*,'(6(A5,X))') "KNT", "P1","P2","NEI1","NEI2","NEI3"
    do e = 1, UNSTR % NKNT
-      write(*,'(5(I5,X))') e,UNSTR%KNT(e,:),knt_neigh(e,:knt_nneigh(e))
+      write(*,'(6(I5,X))') e,UNSTR%KNT(e,:),knt_neigh(e,:knt_nneigh(e))
    end do
    stop
 666  continue
