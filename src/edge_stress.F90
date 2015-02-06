@@ -8,6 +8,8 @@ implicit none
    !< Anzahl der Relevanten Edges für den Größenvergleich
    integer, allocatable, save                :: KNT_NEIGH(:,:)
    !< IDs der Edges mit deren Größe die Aktuelle Edge verglichen werdne soll
+   real(kind = dp), parameter                :: stress_max = 1E8_DP
+   real(kind = dp), parameter                :: seitenver  = 1.3E0_DP
    public CALC_EDGE_STRESSES
    public INIT_EDGE_STRETCH
 contains
@@ -30,17 +32,17 @@ contains
       conv_prob = .FALSE.
       conv_prob_count = 0
       do i = 1, UNSTR % NKNT
-         if (UNSTR % KNT_SPANNUNG(i,1) > 1.0D5) then
+         if (UNSTR % KNT_SPANNUNG(i,1) > stress_max) then
    !         write(*,*) i,UNSTR % KNT_SPANNUNG(i,1)
-            UNSTR % KNT_SPANNUNG(i,1) = 1.0D5
+            UNSTR % KNT_SPANNUNG(i,1) = stress_max
             conv_prob = .TRUE.
             conv_prob_count = conv_prob_count + 1
          end if
       end do
       if (conv_prob) then
-         write(*,*) "WARNING in calc_edge_stresses"
-         write(*,*) "Convergence Problems: Edge Stress too high in",conv_prob_count,"Cells"
-         write(*,*) "Limited to EDGE_STRESS_MAX = 1.0D5"
+         write(*,'(A)') "WARNING in calc_edge_stresses"
+         write(*,'(A,X,I0,X,A)') "Convergence Problems: Edge Stress too high in",conv_prob_count,"Cells"
+         write(*,'(A,X,ES7.1)') "Limited to EDGE_STRESS_MAX =",stress_max
       end if
    END SUBROUTINE CALC_EDGE_STRESSES
 
@@ -78,7 +80,6 @@ contains
 
    REAL(KIND = 8),allocatable :: winkel(:),lenge(:)
    REAL(KIND = 8), PARAMETER :: Pi = 180.D0/3.1415927D0
-   REAL(KIND = 8), PARAMETER :: seitenver = 1.2D0
 #ifdef DEBUG
    IF (GLOBAL%DBG >= 1)  THEN
       WRITE(*,'(A)') "CELL_INC"
@@ -158,7 +159,7 @@ contains
    allocate( knt_neigh  ( UNSTR % NKNT ,2) )
    ! INITIALISERUNG DER ANZAHL DER RELEVANTEN KNOTEN MIT 0
    KNT_NNEIGH = 0
-
+!   goto 666
    block_loop: do b = 1, GLOBAL % NBLOCK
       kdir_loop: do k = 1, BLOCKS(B) % NPK
          jdir_loop: do j = 1, BLOCKS(B) % NPJ
@@ -243,5 +244,6 @@ contains
       write(*,'(5(I5,X))') e,UNSTR%KNT(e,:),knt_neigh(e,:knt_nneigh(e))
    end do
    stop
+666  continue
    END SUBROUTINE INIT_EDGE_STRETCH
 end module edge_stress
