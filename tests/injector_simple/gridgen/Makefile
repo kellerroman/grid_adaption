@@ -1,18 +1,21 @@
 FC=gfortran
 
+#CFLAGS  = -Wconversion -Wall -Wextra -fbounds-check
+CFLAGS += -O3
+
+.PHONY: run gridgen clean paraview tecplot
+
 run: gridgen
-	./gridgen
-
+	@./gridgen
+	
 gridgen: gridgen.F90
-	$(FC) $< -o $@
-
-.PHONY: run gridgen clean
+	@$(FC) $(CFLAGS) $< -o $@
 
 clean:
-	@rm -f git.* gridgen *~  *.vtk *.lay *.plt *.mod
+	@rm -f gridgen git.* *.vtk *.bin *.dat *.pyc *.plt *.mod *.lay *~
 
 paraview: run
-	../../../bin/sol2para -git
+	@../../../bin/sol2para -git
 	
 tecplot: run
 	@u2p -git

@@ -1,33 +1,30 @@
 FC=gfortran
 
+HOMEDIR=../../
+
 CFLAGS += -O3
 CFLAGS += -fbounds-check -fcheck-array-temporaries -Wall
 CFLAGS += -DDEBUG
 
-GRID_ADAPT=../../bin/grid_adapt
-.PHONY: clean all 
+GRID_ADAPT=$(HOMEDIR)bin/grid_adapt
+
+.PHONY: all cmp run gridgen clean cp
 
 	
 all: cmp run
 
-tool:
-	$(FC) -O3 simp_git.F90 -o simp_git
-
 cmp:
-	cd ../..; make
+	@$(MAKE) -C $(HOMEDIR)
 
 run:
-	@echo 'Running Grid-Adaper on 20x10 Grid'
-	$(GRID_ADAPT) #-debug
-	
+	@echo 'Running Grid-Adaper on simple Chamber'
+	@$(GRID_ADAPT) #-debug
+
 clean:
-	rm -vf *.o
-	rm -vf *.mod
-	rm -vf *.ufo 
-	rm -vf *.dat
-	rm -vrf *~
-	rm -vf *.plt
-	rm -vf *.png
-	rm -vf *.vtk
-	rm -vf *.txt git_out.bin
-	
+	@rm -vf git_out.bin *.o *.mod *.ufo *.dat *.plt *.png *.vtk *.txt 
+	@rm -vrf *~
+
+##### CLEAN PROJECT
+cp: 
+	@echo "CLEANING SOLVER DIR"
+	@make -C $(MAIN_DIR) clean

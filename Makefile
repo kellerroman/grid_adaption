@@ -10,10 +10,13 @@ solver: FORCE
 clean: FORCE
 	@(cd $(OBJECTS_DIR) && $(MAKE) -f $(REALMAKEFILE) clean)
 	@rm -rf obj bin *~
-	$(MAKE) -C tests clean
+	@$(MAKE) -C tests clean
 	
 tools: FORCE
 	@(cd $(OBJECTS_DIR) && $(MAKE) -f $(TOOLMAKEFILE))	
 	
 FORCE:
 	@mkdir -p obj bin
+
+test:
+	@$(MAKE) -C tests 

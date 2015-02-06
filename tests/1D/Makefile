@@ -1,32 +1,34 @@
 FC=gfortran
 
+HOMEDIR=../../
+
 CFLAGS += -O3
 CFLAGS += -fbounds-check -fcheck-array-temporaries -Wall
 CFLAGS += -DDEBUG
 
-MAIN_DIR=../../
+GRID_ADAPT=$(HOMEDIR)bin/grid_adapt
 
-GRID_ADAPT=$(MAIN_DIR)bin/grid_adapt
+.PHONY: all cmp run gridgen clean cp
 
-.PHONY: clean all cmp run gridgen cp
 	
-all: gridgen cmp run
+all: cmp run
 
 cmp:
-	@$(MAKE) -C $(MAIN_DIR)
+	@$(MAKE) -C $(HOMEDIR)
 
-run:
-	@echo 'Running Grid-Adaper on schraeges Gitter'
+run: gridgen
+	@echo 'Running Grid-Adaper on simple Chamber'
 	@$(GRID_ADAPT) #-debug
 
 gridgen:
-	@make -C gridgen
+	@$(MAKE) -C gridgen run
 	
 clean:
-	@rm -vf *.o *.mod *.ufo  *.dat *~ *.plt *.png *.vtk *.txt git_out.bin
+	@rm -vf git_out.bin *.o *.mod *.ufo *.dat *.plt *.png *.vtk *.txt 
+	@rm -vrf *~
 	@$(MAKE) -C gridgen clean
 
 ##### CLEAN PROJECT
 cp: 
 	@echo "CLEANING SOLVER DIR"
-	@m$(MAKE) -C $(MAIN_DIR) clean
+	@make -C $(MAIN_DIR) clean
