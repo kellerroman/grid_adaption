@@ -79,10 +79,12 @@ contains
    USE MOD_GLOBAL
    IMPLICIT NONE
 
+   integer :: e
+
    INTEGER :: P,K,K1,KN,KN1
 
-   REAL(KIND = 8),allocatable :: winkel(:),lenge(:)
-   REAL(KIND = 8), PARAMETER :: Pi = 180.D0/3.1415927D0
+!   REAL(KIND = 8),allocatable :: winkel(:),lenge(:)
+!   REAL(KIND = 8), PARAMETER :: Pi = 180.D0/3.1415927D0
 #ifdef DEBUG
    IF (GLOBAL%DBG >= 1)  THEN
       WRITE(*,'(A)') "CELL_INC"
@@ -93,52 +95,55 @@ contains
       WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","CALC_EDGE_STRETCH_STRESSES"
       STOP
    END IF
-
-   DO P = 1, UNSTR % NPKT
-      ALLOCATE ( winkel(UNSTR % PKT_NKNT(P)),lenge(UNSTR % PKT_NKNT(P)))
-      DO K = 1, UNSTR % PKT_NKNT(P)
-         KN = UNSTR % PKT_KNT(P,K)
-         winkel(K) = ATAN(UNSTR % KNT_DN(KN,3)/ UNSTR % KNT_DN(KN,2)) * PI + 360.0D0
-         winkel(K) = mod(winkel(K),180.0D0)
-         lenge(K)  = UNSTR % KNT_DN(KN,1)
-      END DO
-      DO K = 1, UNSTR % PKT_NKNT(P)-1
-         DO K1 = K+1,UNSTR % PKT_NKNT(P)
-            KN                           = UNSTR % PKT_KNT(P,K)
-            KN1                          = UNSTR % PKT_KNT(P,K1)
-            if (abs(winkel(k) - winkel(k1)) < 25.0D0) then
-            !!!! ZEIGEN IN GLEICHE RICHTUNG
-
-               if ( lenge(K1) / lenge(K) > seitenver ) then
-   !                write(*,*) P,K,K1,lenge(K),lenge(K1)
-   !                write(*,*) winkel(k),winkel(k1)
-   !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%KNT_SPANNUNG(KN,2) * 1.0D0/seitenver
-                  CELL_INC_STRESS(KN1)   = MAX(1D-5,CELL_INC_STRESS(KN1)) * 1.01D0
-               else if ( lenge(K1) / lenge(K) > seitenver*0.9D0 ) then
-               else if (lenge(K1) >= lenge(K) ) then
-   !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%CELL_INC_STRESS(KN1) * 0.95D0
-               else
-   !               UNSTR%CELL_INC_STRESS(KN1)   = 0.0D0
-               end if
-
-               if ( lenge(K) / lenge(K1) > seitenver ) then
-   !                write(*,*) P,K,K1,lenge(K),lenge(K1)
-   !                write(*,*) winkel(k),winkel(k1)
-   !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%KNT_SPANNUNG(KN,2) * 1.0D0/seitenver
-                  CELL_INC_STRESS(KN)   = MAX(1D-5,CELL_INC_STRESS(KN)) * 1.01D0
-               else if ( lenge(K) / lenge(K1) > seitenver*0.9D0 ) then
-               else if (lenge(K) >= lenge(K1) ) then
-   !               UNSTR%CELL_INC_STRESS(KN)   = UNSTR%CELL_INC_STRESS(KN) * 0.95D0
-               else
-   !               UNSTR%CELL_INC_STRESS(KN)   = 0.0D0
-               end if
+   DO E = 1, UNSTR % NKNT
 
 
-            end if
-            UNSTR % KNT_SPANNUNG(KN1,1)  = UNSTR % KNT_SPANNUNG(KN1,1) + CELL_INC_STRESS(KN1)
-            UNSTR % KNT_SPANNUNG(KN,1)  = UNSTR % KNT_SPANNUNG(KN,1) + CELL_INC_STRESS(KN)
-         END DO
-      END DO
+   END DO
+!   DO P = 1, UNSTR % NPKT
+!      ALLOCATE ( winkel(UNSTR % PKT_NKNT(P)),lenge(UNSTR % PKT_NKNT(P)))
+!      DO K = 1, UNSTR % PKT_NKNT(P)
+!         KN = UNSTR % PKT_KNT(P,K)
+!         winkel(K) = ATAN(UNSTR % KNT_DN(KN,3)/ UNSTR % KNT_DN(KN,2)) * PI + 360.0D0
+!         winkel(K) = mod(winkel(K),180.0D0)
+!         lenge(K)  = UNSTR % KNT_DN(KN,1)
+!      END DO
+!      DO K = 1, UNSTR % PKT_NKNT(P)-1
+!         DO K1 = K+1,UNSTR % PKT_NKNT(P)
+!            KN                           = UNSTR % PKT_KNT(P,K)
+!            KN1                          = UNSTR % PKT_KNT(P,K1)
+!            if (abs(winkel(k) - winkel(k1)) < 25.0D0) then
+!            !!!! ZEIGEN IN GLEICHE RICHTUNG
+!
+!               if ( lenge(K1) / lenge(K) > seitenver ) then
+!   !                write(*,*) P,K,K1,lenge(K),lenge(K1)
+!   !                write(*,*) winkel(k),winkel(k1)
+!   !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%KNT_SPANNUNG(KN,2) * 1.0D0/seitenver
+!                  CELL_INC_STRESS(KN1)   = MAX(1D-5,CELL_INC_STRESS(KN1)) * 1.01D0
+!               else if ( lenge(K1) / lenge(K) > seitenver*0.9D0 ) then
+!               else if (lenge(K1) >= lenge(K) ) then
+!   !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%CELL_INC_STRESS(KN1) * 0.95D0
+!               else
+!   !               UNSTR%CELL_INC_STRESS(KN1)   = 0.0D0
+!               end if
+!
+!               if ( lenge(K) / lenge(K1) > seitenver ) then
+!   !                write(*,*) P,K,K1,lenge(K),lenge(K1)
+!   !                write(*,*) winkel(k),winkel(k1)
+!   !               UNSTR%CELL_INC_STRESS(KN1)   = UNSTR%KNT_SPANNUNG(KN,2) * 1.0D0/seitenver
+!                  CELL_INC_STRESS(KN)   = MAX(1D-5,CELL_INC_STRESS(KN)) * 1.01D0
+!               else if ( lenge(K) / lenge(K1) > seitenver*0.9D0 ) then
+!               else if (lenge(K) >= lenge(K1) ) then
+!   !               UNSTR%CELL_INC_STRESS(KN)   = UNSTR%CELL_INC_STRESS(KN) * 0.95D0
+!               else
+!   !               UNSTR%CELL_INC_STRESS(KN)   = 0.0D0
+!               end if
+!
+!
+!            end if
+!            UNSTR % KNT_SPANNUNG(KN1,1)  = UNSTR % KNT_SPANNUNG(KN1,1) + CELL_INC_STRESS(KN1)
+!            UNSTR % KNT_SPANNUNG(KN,1)  = UNSTR % KNT_SPANNUNG(KN,1) + CELL_INC_STRESS(KN)
+!         END DO
+!      END DO
 
       DEALLOCATE(winkel,lenge)
    END DO
@@ -155,6 +160,7 @@ contains
    integer :: b2,i2,j2,k2,p2
    integer :: b3,i3,j3,k3,p3
    integer :: e,e1,e2
+   logical :: allready_connected
    ALLOCATE( CELL_INC_STRESS(UNSTR%NKNT))
    CELL_INC_STRESS = 1.0D-10
 
@@ -162,18 +168,18 @@ contains
    allocate( knt_neigh  ( UNSTR % NKNT ,3) )
    ! INITIALISERUNG DER ANZAHL DER RELEVANTEN KNOTEN MIT 0
    KNT_NNEIGH = 0
-   goto 666
 
    !!! ES WIRD ÜBER BLOCKGRENZEN IMMER NUR "ZURÜCK" nicht nach vorne geschaut
    !!! um doppelte referenzen zu verhindern
    !!! d.h. schlefen laufen bis NCX
    !!! I/J/K + 1 ist unkritisch
    block_loop: do b = 1, GLOBAL % NBLOCK
-      kdir_loop: do k = 1, BLOCKS(B) % NCK
-         jdir_loop: do j = 1, BLOCKS(B) % NCJ
-            idir_loop: do i = 1, BLOCKS(B) % NCI
+      kdir_loop: do k = 1, BLOCKS(B) % NPK
+         jdir_loop: do j = 1, BLOCKS(B) % NPJ
+            idir_loop: do i = 1, BLOCKS(B) % NPI
                dir_loop: do dir = 1,2
                   if (dir == 1) then !!!!!! I-DIR
+                     if (i == BLOCKS(B) % NPI) cycle dir_loop
                      if (i == 1) then
                         if (BLOCKS(B) % BLOCK_CONNECTION(1,1) > 0) then
                            b2 = BLOCKS(B) % BLOCK_CONNECTION(1,1)
@@ -206,6 +212,7 @@ contains
                      k3 = k
 
                   else if (dir == 2) then
+                     if (j == BLOCKS(B) % NPJ) cycle dir_loop
                      if (j == 1) then
                         if (BLOCKS(B) % BLOCK_CONNECTION(3,1) > 0) then
                            b2 = BLOCKS(B) % BLOCK_CONNECTION(3,1)
@@ -262,20 +269,48 @@ contains
                      end if
                   end do
                   if (e1 /= -1 .and. e2 /= -1) then
-                     knt_nneigh(e1) = knt_nneigh(e1) + 1
-                     knt_nneigh(e2) = knt_nneigh(e2) + 1
 
-                     if (knt_nneigh(e1) > 3) then
-                        write(*,*) "E1",knt_nneigh(e1), p,p2,p3,e1, e2
-                        stop
-                     end if
-                     if (knt_nneigh(e2) > 3) then
-                        write(*,*) "E2",knt_nneigh(e2), p,p2,p3,e2, e1
-                        stop
-                     end if
+                      allready_connected = .FALSE.
+                     do ep = 1,knt_nneigh(e1)
+                        e = knt_neigh(e1, ep)
+                        if( e == e2 ) then
+                           allready_connected = .TRUE.
+                           exit
+                        end if
+                     end do
 
-                     knt_neigh(e1, knt_nneigh(e1)) = e2
-                     knt_neigh(e2, knt_nneigh(e2)) = e1
+                     if (.NOT. allready_connected) then
+                        knt_nneigh(e1) = knt_nneigh(e1) + 1
+                        knt_nneigh(e2) = knt_nneigh(e2) + 1
+
+                        if (knt_nneigh(e1) > 3) then
+
+                           write(*,*) "@PKT",UNSTR%PKT_REF(p,1:4)
+                           write(*,*) "Edge     1",e1,"from",UNSTR%PKT_REF(UNSTR%KNT(e1,1),1:4) &
+                                     ,"to",UNSTR%PKT_REF(UNSTR%KNT(e1,2),1:4)
+
+                           write(*,*) "NeighEdge1",knt_neigh(e1,1),"from",UNSTR%PKT_REF(UNSTR%KNT(knt_neigh(e1,1),1),1:4) &
+                                     ,"to",UNSTR%PKT_REF(UNSTR%KNT(knt_neigh(e1,1),2),1:4)
+
+
+                           write(*,*) "NeighEdge2",knt_neigh(e1,2),"from",UNSTR%PKT_REF(UNSTR%KNT(knt_neigh(e1,2),1),1:4) &
+                                     ,"to",UNSTR%PKT_REF(UNSTR%KNT(knt_neigh(e1,2),2),1:4)
+
+
+                           write(*,*) "NeighEdge3",knt_neigh(e1,3),"from",UNSTR%PKT_REF(UNSTR%KNT(knt_neigh(e1,3),1),1:4) &
+                                     ,"to",UNSTR%PKT_REF(UNSTR%KNT(knt_neigh(e1,3),2),1:4)
+                           write(*,*) "New  Edge1",e2,"from",UNSTR%PKT_REF(UNSTR%KNT(e2,1),1:4) &
+                                     ,"to",UNSTR%PKT_REF(UNSTR%KNT(e2,2),1:4)
+                           stop
+                        end if
+                        if (knt_nneigh(e2) > 3) then
+                           write(*,*) "E2",knt_nneigh(e2), p,p2,p3,e2, e1
+                           stop
+                        end if
+
+                        knt_neigh(e1, knt_nneigh(e1)) = e2
+                        knt_neigh(e2, knt_nneigh(e2)) = e1
+                     end if
                   else
                      write(*,*)
                      STOP "ERROR in INIT_EDGE_STRETCH: could not find egdes"
@@ -285,11 +320,16 @@ contains
          end do jdir_loop
       end do kdir_loop
    end do block_loop
-   write(*,'(6(A5,X))') "KNT", "P1","P2","NEI1","NEI2","NEI3"
-   do e = 1, UNSTR % NKNT
-      write(*,'(6(I5,X))') e,UNSTR%KNT(e,:),knt_neigh(e,:knt_nneigh(e))
-   end do
-   stop
-666  continue
+   if (MINVAL(knt_nneigh) == 0) then
+      write(*,'(14(A5,X))') "KNT", "P1","P2"&
+                           ,"P1_I","P1_J","P1_K","P1_B"&
+                           ,"P2_I","P2_J","P2_K","P2_B"
+      do e = 1, UNSTR % NKNT
+         if (knt_nneigh(e) > 0) cycle
+         write(*,'(14(I5,X))') e,UNSTR%KNT(e,:),knt_neigh(e,:knt_nneigh(e))&
+                              ,UNSTR%PKT_REF(UNSTR%KNT(e,1),1:4)&
+                              ,UNSTR%PKT_REF(UNSTR%KNT(e,2),1:4)
+      end do
+   end if
    END SUBROUTINE INIT_EDGE_STRETCH
 end module edge_stress
