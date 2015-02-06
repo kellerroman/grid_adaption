@@ -418,6 +418,12 @@ contains
                         BLOCK_NUM = TRIM(ADJUSTL(VARNAME(1:POS)))
                         BLOCK_PHASE = lower_case(TRIM(ADJUSTL(VARNAME(POS+1:))))
                         READ(BLOCK_NUM,*) iBlock
+                        if (iBLOCK > GLOBAL % NBLOCK) then
+                           write(*,'(A,I0,A,I0,A)') "WARNING: Block-Number(",iBLOCK,") given in "//&
+                           &TRIM(GLOBAL % WALL_REFINEMENT_FILE)//&
+                           &" exceeds total Number of Blocks(",GLOBAL % NBLOCK,")"
+                           exit
+                        end if
                         SELECT CASE (TRIM(BLOCK_PHASE))
                         CASE("n")
                            BLOCK_PHASE = "NORTH"
