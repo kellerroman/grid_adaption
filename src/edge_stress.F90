@@ -13,11 +13,12 @@ implicit none
    public CALC_EDGE_STRESSES
    public INIT_EDGE_STRETCH
 contains
-   SUBROUTINE CALC_EDGE_STRESSES()
+   SUBROUTINE CALC_EDGE_STRESSES(STRESSES_SUM)
       USE MOD_GLOBAL
       USE CONST
       use wall_refinement, only: calc_wall_refinement
       implicit none
+      real(kind = dp),intent(out) :: STRESSES_SUM
       integer :: i
       logical :: conv_prob
       integer :: conv_prob_count
@@ -31,7 +32,9 @@ contains
       call calc_wall_refinement()
       conv_prob = .FALSE.
       conv_prob_count = 0
+      STRESSES_SUM = 0.0e0_dp
       do i = 1, UNSTR % NKNT
+         STRESSES_SUM = STRESSES_SUM + UNSTR % KNT_SPANNUNG(i,1)
          if (UNSTR % KNT_SPANNUNG(i,1) > stress_max) then
    !         write(*,*) i,UNSTR % KNT_SPANNUNG(i,1)
             UNSTR % KNT_SPANNUNG(i,1) = stress_max
@@ -159,7 +162,7 @@ contains
    allocate( knt_neigh  ( UNSTR % NKNT ,3) )
    ! INITIALISERUNG DER ANZAHL DER RELEVANTEN KNOTEN MIT 0
    KNT_NNEIGH = 0
-!   goto 666
+   goto 666
 
    !!! ES WIRD ÜBER BLOCKGRENZEN IMMER NUR "ZURÜCK" nicht nach vorne geschaut
    !!! um doppelte referenzen zu verhindern
@@ -185,8 +188,7 @@ contains
                                         ,"@FACE:",BLOCKS(B) % BLOCK_CONNECTION(1,2) &
                                         ,"MUTATION",BLOCKS(B) % BLOCK_CONNECTION(1,3)
 
-
-                              STOP "ERROR in INIT_EDGE_STRETCH: Phase-Con not impl"
+                              stop "ERROR in INIT_EDGE_STRETCH: Phase-Con not impl"
                            end if
                         else
                            cycle dir_loop !! kein block angeschlossen

@@ -29,7 +29,7 @@ program grid_adaption
 
 
    INTEGER :: i
-   REAL(KIND=8) :: DN_SUM,DN_MAX
+   REAL(KIND=8) :: DN_SUM,DN_MAX,STRESSES_SUM
    INTEGER :: DN_MAX_POS
 
    WRITE(*,'(A)') "AUTMATISCHE GRID ADAPTION by ROMAN KELLER"
@@ -47,7 +47,7 @@ program grid_adaption
       CALL CALC_GRID()
       i = 1
    ELSE
-      WRITE(*,'(A9,X,2(A12,x),A)') "ITERATION","RES_SUM","RES_MAX","@(B,I,J,K)"
+      WRITE(*,'(A9,X,3(A12,x),A10)') "ITERATION","RES_SUM","RES_MAX","SUM_STRESSES","@(B,I,J,K)"
 
 
       MAIN_LOOP: do i = 1, Global % NITER
@@ -66,13 +66,16 @@ program grid_adaption
             END IF
          END IF
 
-         CALL CALC_EDGE_STRESSES()
+         CALL CALC_EDGE_STRESSES(STRESSES_SUM)
 
          CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
 
          IF (I < 50 .OR. MOD(I,GLOBAL % NITER_OUTPUT) == 0 ) THEN
-            WRITE(*,'(X,I8,X,2(D12.5,X),"@",I0," (",4(I0,X),")")') I,DN_SUM &
-                           ,DN_MAX,DN_MAX_POS,UNSTR%PKT_REF(DN_MAX_POS,4),UNSTR%PKT_REF(DN_MAX_POS,1:3)
+            WRITE(*,'(X,I8,X,3(ES12.5,X),"@",I0,"(",4(I0,X),")")')       &
+                           I,DN_SUM,DN_MAX,STRESSES_SUM                &
+                           ,DN_MAX_POS,UNSTR%PKT_REF(DN_MAX_POS,4)      &
+                           ,UNSTR%PKT_REF(DN_MAX_POS,1:3)
+
             CALL CHECK_WALL_REFINEMENT()
          END IF
       end do MAIN_LOOP
