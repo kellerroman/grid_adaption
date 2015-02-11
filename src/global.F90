@@ -140,6 +140,8 @@ MODULE MOD_GLOBAL
    TYPE(TGLOBAL) :: GLOBAL
    TYPE(TBLOCKS), ALLOCATABLE :: BLOCKS(:)
    TYPE(TUNSTR) :: UNSTR
+   logical :: iteration_output
+   !< True wenn in dieser Iteartion eine Residuen ausgabe erfolgt
 END MODULE
 
 MODULE CONST

@@ -8,12 +8,12 @@ implicit none
    !< Anzahl der Relevanten Edges für den Größenvergleich
    integer, allocatable, save                :: KNT_NEIGH(:,:)
    !< IDs der Edges mit deren Größe die Aktuelle Edge verglichen werdne soll
-   real(kind = dp), parameter                :: stress_max = 1E8_DP
+   real(kind = dp), parameter                :: stress_max = 1E10_DP
    real(kind = dp), parameter                :: seitenver  = 1.3E0_DP
    public CALC_EDGE_STRESSES
    public INIT_EDGE_STRETCH
 contains
-   SUBROUTINE CALC_EDGE_STRESSES(STRESSES_SUM)
+   SUBROUTINE CALC_EDGE_STRESSES(STRESSES_SUm   )
       USE MOD_GLOBAL
       USE CONST
       use wall_refinement, only: calc_wall_refinement
@@ -42,7 +42,7 @@ contains
             conv_prob_count = conv_prob_count + 1
          end if
       end do
-      if (conv_prob) then
+      if (conv_prob .and. iteration_output) then
          write(*,'(A)') "WARNING in calc_edge_stresses"
          write(*,'(A,X,I0,X,A)') "Convergence Problems: Edge Stress too high in",conv_prob_count,"Cells"
          write(*,'(A,X,ES7.1)') "Limited to EDGE_STRESS_MAX =",stress_max
@@ -82,9 +82,10 @@ contains
    integer :: e
 
    INTEGER :: P,K,K1,KN,KN1
-
+   real(kind = dp) :: length_ne,length
 !   REAL(KIND = 8),allocatable :: winkel(:),lenge(:)
 !   REAL(KIND = 8), PARAMETER :: Pi = 180.D0/3.1415927D0
+
 #ifdef DEBUG
    IF (GLOBAL%DBG >= 1)  THEN
       WRITE(*,'(A)') "CELL_INC"
@@ -95,10 +96,26 @@ contains
       WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","CALC_EDGE_STRETCH_STRESSES"
       STOP
    END IF
-   DO E = 1, UNSTR % NKNT
-
-
-   END DO
+   do e = 1, UNSTR % NKNT
+      length = UNSTR % KNT_DN(e,1)
+      length_ne = 1E5_dp
+      do k = 1,knt_nneigh(e)
+         kn = knt_neigh(e,k)
+         length_ne = min(length_ne, UNSTR % KNT_DN(kn,1) )
+      end do
+      if (length / length_ne > seitenver) then
+         CELL_INC_STRESS(e) = MAX(1E-5_dp,CELL_INC_STRESS(e)) * 1.01E0_dp
+      else if ( length / length_ne > seitenver*0.9E0_dp ) then
+         ! Zur stabilität des Verfahren ist ein gewisser Korridor notwendig
+         ! wenn diese Zeile auskommentiert ist, fängt das Gitter an zu schwingen
+      else if ( length > length_ne ) then
+         CELL_INC_STRESS(e) = CELL_INC_STRESS(e) * 0.95E0_dp
+!         write(*,*) "INK",e,length,length_ne
+      else
+         CELL_INC_STRESS(e) = 0.0E0_dp
+      end if
+      UNSTR % KNT_SPANNUNG(e,1)  = UNSTR % KNT_SPANNUNG(e,1) + CELL_INC_STRESS(e)
+   end do
 !   DO P = 1, UNSTR % NPKT
 !      ALLOCATE ( winkel(UNSTR % PKT_NKNT(P)),lenge(UNSTR % PKT_NKNT(P)))
 !      DO K = 1, UNSTR % PKT_NKNT(P)
@@ -144,9 +161,9 @@ contains
 !            UNSTR % KNT_SPANNUNG(KN,1)  = UNSTR % KNT_SPANNUNG(KN,1) + CELL_INC_STRESS(KN)
 !         END DO
 !      END DO
-
-      DEALLOCATE(winkel,lenge)
-   END DO
+!
+!      DEALLOCATE(winkel,lenge)
+!   END DO
    END SUBROUTINE CALC_EDGE_STRETCH_STRESSES
    SUBROUTINE INIT_EDGE_STRETCH
    ! INITIALISATION FOR THE EDGE STRETCH CONTROL ROUTINE
@@ -270,7 +287,7 @@ contains
                   end do
                   if (e1 /= -1 .and. e2 /= -1) then
 
-                      allready_connected = .FALSE.
+                     allready_connected = .FALSE.
                      do ep = 1,knt_nneigh(e1)
                         e = knt_neigh(e1, ep)
                         if( e == e2 ) then

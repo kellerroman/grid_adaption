@@ -52,6 +52,12 @@ program grid_adaption
 
       MAIN_LOOP: do i = 1, Global % NITER
 
+         if (I < 50 .OR. MOD(I,GLOBAL % NITER_OUTPUT) == 0 ) then
+            iteration_output = .true.
+         else
+            iteration_output = .false.
+         end if
+
          CALL CALC_GRID()
 
          IF (GLOBAL % OUTPUT_ANIMATION > 0 ) THEN
@@ -70,7 +76,7 @@ program grid_adaption
 
          CALL RESIZE_GRID(DN_SUM,DN_MAX,DN_MAX_POS)
 
-         IF (I < 50 .OR. MOD(I,GLOBAL % NITER_OUTPUT) == 0 ) THEN
+         if (iteration_output) then
             WRITE(*,'(X,I8,X,3(ES12.5,X),"@",I0,"(",4(I0,X),")")')       &
                            I,DN_SUM,DN_MAX,STRESSES_SUM                &
                            ,DN_MAX_POS,UNSTR%PKT_REF(DN_MAX_POS,4)      &
