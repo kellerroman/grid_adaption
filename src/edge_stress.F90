@@ -8,7 +8,7 @@ implicit none
    !< Anzahl der Relevanten Edges für den Größenvergleich
    integer, allocatable, save                :: KNT_NEIGH(:,:)
    !< IDs der Edges mit deren Größe die Aktuelle Edge verglichen werdne soll
-   real(kind = dp), parameter                :: stress_max = 1E10_DP
+   real(kind = dp), parameter                :: stress_max = 1E20_DP
    real(kind = dp), parameter                :: seitenver  = 1.3E0_DP
    public CALC_EDGE_STRESSES
    public INIT_EDGE_STRETCH
@@ -204,6 +204,11 @@ contains
                            .AND.BLOCKS(B) % BLOCK_CONNECTION(1,3) == 1) then
                               i2 = BLOCKS(B2) % NCI !!NPI -1
                               j2 = j
+                              k2 = k
+                           else if  (BLOCKS(B) % BLOCK_CONNECTION(1,2) == 4 &
+                           .AND.BLOCKS(B) % BLOCK_CONNECTION(1,3) == 2) then
+                              i2 = BLOCKS(B2) % NPI - j + 1 !!NPI -1
+                              j2 = BLOCKS(B2) % NCJ
                               k2 = k
                            else
                               write(*,'(5(A,X,I0,X))') "Block i-Dir",B &

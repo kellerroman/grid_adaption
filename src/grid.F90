@@ -12,7 +12,7 @@ contains
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       INTEGER :: N,I,J,K,U,L
-      LOGICAL :: IS_OLD_NODE,DO_CONNECT_I,DO_CONNECT_J
+      LOGICAL :: IS_OLD_NODE,DO_CONNECT_I,DO_CONNECT_J,DO_CONNECT_K
       INTEGER :: MYPKT, MYKNT, NPKT
 
       INTEGER :: NUMBER_OF_FACES,NACHBAR,F
@@ -43,8 +43,16 @@ contains
       END IF
 
       IF (GLOBAL % AXSYM == 2) THEN
-         WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","unstrukt"
-         STOP
+!         WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","unstrukt"
+!         STOP
+         UNSTR%NPKT = 0
+         UNSTR%NKNT = 0
+         DO N=1,GLOBAL%NBLOCK
+            UNSTR%NPKT = UNSTR%NPKT + BLOCKS(N) % NPI*BLOCKS(N) % NPJ*BLOCKS(N) % NPK
+            UNSTR%NKNT = UNSTR%NKNT + BLOCKS(N) % NCI*BLOCKS(N) % NPJ*BLOCKS(N) % NPK &         ! KANTEN IN I-RICHTUNG
+                                    + BLOCKS(N) % NPI*BLOCKS(N) % NCJ*BLOCKS(N) % NPK &         ! KANTEN IN J-RICHTUNG
+                                    + BLOCKS(N) % NPI*BLOCKS(N) % NPJ*BLOCKS(N) % NCK           ! KANTEN IN K-RICHTUNG
+         END DO
       ELSE IF (GLOBAL % AXSYM == -1) THEN
          UNSTR%NPKT = 0
          UNSTR%NKNT = 0
@@ -103,24 +111,36 @@ contains
       BLOCKS_STATUS(BLOCKS_LIST(BLOCKS_TO_PROCESS)) = 1
 
    !   DO N=1,GLOBAL%NBLOCK
-      DO WHILE (BLOCKS_TO_PROCESS > 0)
+      BLOCK_LOOP: DO WHILE (BLOCKS_TO_PROCESS > 0)
          N = BLOCKS_LIST(1)
          BLOCKS_STATUS(N) = 2
          IF (GLOBAL%DBG >= 1) &
          write(*,*) "BLOCK",N,"of",GLOBAL%NBLOCK,"WIRD ABGEARBEITET",BLOCKS_TO_PROCESS
          ALLOCATE( BLOCKS(N) % ASSOC (BLOCKS(N)%NPI,BLOCKS(N)%NPJ,BLOCKS(N)%NPK) )
-         DO J = 1,BLOCKS(N)%NPJ
-            DO I = 1,BLOCKS(N)%NPI
+         DO K = 1,BLOCKS(N) % NPK
+         DO J = 1,BLOCKS(N) % NPJ
+            DO I = 1,BLOCKS(N) % NPI
                DO_CONNECT_I = .TRUE.
                DO_CONNECT_J = .TRUE.
+               DO_CONNECT_K = .TRUE.
                IS_OLD_NODE = .TRUE.
                IF ( I == 1 .AND. BLOCKS(N) % BLOCK_CONNECTION(1,1) >= 1 &
                .AND. BLOCKS_STATUS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) == 2) THEN
                   DO_CONNECT_J = .FALSE.
+                  DO_CONNECT_K = .FALSE.
                   IF (BLOCKS(N) % BLOCK_CONNECTION(1,2) == 2 .AND. &
                       BLOCKS(N) % BLOCK_CONNECTION(1,3) == 1) THEN
                       L = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % NPI
                       MYPKT = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % ASSOC(L,J,K)
+                      IF (GLOBAL%DBG >= 2) &
+                      WRITE(*,'("VERBINDUNG VON BLOCK ",I0,A," J = ",I0," AUF BLOCK ",I0,A," PUNKT: ",I0)') &
+                              N,FACES(1),J,BLOCKS(N) % BLOCK_CONNECTION(1,1),FACES(BLOCKS(N) % BLOCK_CONNECTION(1,2)),MYPKT
+
+                  ELSE IF (BLOCKS(N) % BLOCK_CONNECTION(1,2) == 4 .AND. &
+                      BLOCKS(N) % BLOCK_CONNECTION(1,3) == 2) THEN
+                      L = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % NPI
+                      U = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % NPJ
+                      MYPKT = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % ASSOC(U+1-J,L,K)
                       IF (GLOBAL%DBG >= 2) &
                       WRITE(*,'("VERBINDUNG VON BLOCK ",I0,A," J = ",I0," AUF BLOCK ",I0,A," PUNKT: ",I0)') &
                               N,FACES(1),J,BLOCKS(N) % BLOCK_CONNECTION(1,1),FACES(BLOCKS(N) % BLOCK_CONNECTION(1,2)),MYPKT
@@ -132,6 +152,7 @@ contains
                            ,BLOCKS(N) % BLOCK_CONNECTION(1,3)
                      STOP "WEST RAND KANN NUR MIT UNVERDREHTER OST RAND"
                   END IF
+
                ELSE IF ( I == BLOCKS(N) % NPI .AND. BLOCKS(N) % BLOCK_CONNECTION(2,1) >= 1 &
                .AND. BLOCKS_STATUS(BLOCKS(N) % BLOCK_CONNECTION(2,1)) == 2) THEN
                   IF (J == 1 .AND. BLOCKS_STATUS(BLOCKS(N) % BLOCK_CONNECTION(3,1)) == 2) THEN
@@ -140,6 +161,7 @@ contains
                      DO_CONNECT_I = .FALSE.
                   END IF
                   DO_CONNECT_J = .FALSE.
+                  DO_CONNECT_K = .FALSE.
                   IF (BLOCKS(N) % BLOCK_CONNECTION(2,2) == 1 .AND. &
                       BLOCKS(N) % BLOCK_CONNECTION(2,3) == 1) THEN
                       MYPKT = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(2,1)) % ASSOC(1,J,K)
@@ -177,6 +199,29 @@ contains
                            ,BLOCKS(N) % BLOCK_CONNECTION(3,2) &
                            ,BLOCKS(N) % BLOCK_CONNECTION(3,3)
                      STOP "SUED RAND KANN NUR MIT UNVERDREHTER NORD bzw.   OST RAND"
+                  END IF
+               ELSE IF ( J == BLOCKS(N) % NPJ &
+                   .AND. BLOCKS(N) % BLOCK_CONNECTION(4,1) >= 1 &
+                   .AND. BLOCKS_STATUS(BLOCKS(N) % BLOCK_CONNECTION(4,1)) == 2) THEN
+                  WRITE(*,*) "BLOCK",N,"HAT VERBINDUNG ÜBER NORTH AUF ABGEARBEITETEN BLOCK",BLOCKS(N) % BLOCK_CONNECTION(4,1)
+                  STOP "NORTH BLOCKVERBINDING AUF GESCANNTEN BLOCK NOCH NICHT UNTERSTÜTZT"
+
+               ELSE IF ( K == 1               .AND. BLOCKS(N) % BLOCK_CONNECTION(5,1) >= 1) THEN
+                  WRITE(*,*) "BLOCK",N,"HAT VERBINDUNG ÜBER BACK AUF",BLOCKS(N) % BLOCK_CONNECTION(5,1)
+                  STOP "BACK BLOCKVERBINDING NOCH NICHT UNTERSTÜTZT"
+
+               ELSE IF ( K == BLOCKS(N) % NPK .AND. BLOCKS(N) % BLOCK_CONNECTION(6,1) >= 1) THEN
+                  IF ( BLOCKS(N) % BLOCK_CONNECTION(6,2) == 5 .AND. BLOCKS(N) % BLOCK_CONNECTION(6,3) == 1) THEN
+                     STOP "REGULAR FRONT CONNECTION"
+                  ELSE IF ( BLOCKS(N) % BLOCK_CONNECTION(6,2) == 3 .AND. BLOCKS(N) % BLOCK_CONNECTION(6,3) == 3) THEN
+                     STOP "O_GRID FRONT AUF SOUTH"
+                  ELSE
+
+                  WRITE(*,*) "BLOCK",N,"HAT VERBINDUNG ÜBER FRONT AUF" &
+                            ,BLOCKS(N) % BLOCK_CONNECTION(6,1) &
+                            ,BLOCKS(N) % BLOCK_CONNECTION(6,2) &
+                            ,BLOCKS(N) % BLOCK_CONNECTION(6,3)
+                  STOP "FRONT BLOCKVERBINDUNG NOCH NICHT UNTERSTÜTZT"
                   END IF
                ELSE
                   nPKT = nPKT + 1
@@ -273,6 +318,28 @@ contains
 #endif
                END IF
 
+               IF (DO_CONNECT_K .AND. K > 1) THEN! .AND. .NOT.(I == 1 .AND. BLOCKS(N) % BLOCK_CONNECTION(1,1) >= 1)) THEN
+                  MYKNT = MYKNT +1
+                  L = BLOCKS(N) % ASSOC(I,J,K-1)
+                  UNSTR%KNT(MYKNT,1) = L
+                  UNSTR%KNT(MYKNT,2) = MYPKT
+                  ! KANTEN DEN BEIDEN PUNKTE HINZUFÜGEN
+                  !! AKTUELLER PUNKT
+                  U = UNSTR%PKT_NKNT(MYPKT) + 1
+                  UNSTR%PKT_NKNT(MYPKT) = U
+                  UNSTR%PKT_KNT(MYPKT,U) = MYKNT
+                  UNSTR%PKT_NEIGH(MYPKT,U) = L
+                  !! ZWEITER KANTENPKT
+                  U = UNSTR%PKT_NKNT(L) + 1
+                  UNSTR%PKT_NKNT(L) = U
+                  UNSTR%PKT_KNT(L,U) = MYKNT
+                  UNSTR%PKT_NEIGH(L,U) = MYPKT
+#ifdef DEBUG
+                  IF (GLOBAL%DBG >= 2) &
+                    WRITE(*,'("VERBINDE (K-DIR) ",I0," (",I0,",",I0,",",I0,") MIT ",I0," KANTE: ",I0)') MYPKT,I,J,K,L,MYKNT
+#endif
+               END IF
+
    !            ELSE IF (I == 1 .AND. J == 1) THEN
    !               UNSTR%PKT_TYPE(MYPKT ) = 6
    !            ELSE IF (I == BLOCKS(N)%NPI .AND. J == 1) THEN
@@ -292,6 +359,7 @@ contains
    !            END IF
 
             END DO
+         END DO
          END DO
    !      BLOCKS_STATUS
 
@@ -313,7 +381,7 @@ contains
                END IF
             END IF
          END DO
-      END DO
+      END DO BLOCK_LOOP
 
       DO I = 1,GLOBAL % NBLOCK
          IF (BLOCKS_STATUS(I) /= 2) THEN
@@ -1022,8 +1090,62 @@ contains
       !
       !============================================================================!
       IF (GLOBAL % AXSYM == 2) THEN
-         WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","randpunkte"
-         STOP
+         WRITE(*,*) "WARNING: 3D NOCH NICHT UNTERSTÜTZT:"," Schwerpunkte_Randwerte"
+!         STOP
+!
+!         DO N=1,GLOBAL%NBLOCK
+!            DO L = 1,3
+!               DO K = 1,BLOCKS(N)%NCK
+!                  DO I = 1,BLOCKS(N)%NCI
+!                     ! j = 0
+!                     BLOCKS(N)%SWP(I,0,K,L) = 2.0D0 * BLOCKS(N)%SWP(I,1,K,L) - BLOCKS(N)%SWP(I,2,K,L)
+!
+!                     ! j = npj
+!                     BLOCKS(N)%SWP(I,BLOCKS(N)%NPJ,K,L) = 2.0D0 * BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ,K,L)&
+!                                        - BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ-1,K,L)
+!                  END DO
+!                  DO J = 0,BLOCKS(N)%NPJ
+!                     ! I = 0
+!                     BLOCKS(N)%SWP(0,J,K,L) = 2.0D0 * BLOCKS(N)%SWP(1,J,K,L) - BLOCKS(N)%SWP(2,J,K,L)
+!                     ! I = npj
+!                     BLOCKS(N)%SWP(BLOCKS(N)%NPI,J,K,L) = 2.0D0 * BLOCKS(N)%SWP(BLOCKS(N)%NCI,J,K,L)&
+!                                        - BLOCKS(N)%SWP(BLOCKS(N)%NCI-1,J,K,L)
+!                  END DO
+!                  DO I = 0,BLOCKS(N)%NPI,BLOCKS(N)%NPI
+!                     ! j = 0
+!                     BLOCKS(N)%SWP(I,0,K,L) = 2.0D0 * BLOCKS(N)%SWP(I,1,K,L) - BLOCKS(N)%SWP(I,2,K,L)
+!                     ! j = npj
+!                     BLOCKS(N)%SWP(I,BLOCKS(N)%NPJ,K,L) = 2.0D0 * BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ,K,L)&
+!                                        - BLOCKS(N)%SWP(I,BLOCKS(N)%NCJ-1,K,L)
+!                  END DO
+!               END DO
+!            END DO
+!            DO L = 1,GLOBAL%NVAR
+!               DO I = 1,BLOCKS(N)%NCI
+!                  ! j = 0
+!                  BLOCKS(N)%CVAR(I,0,K,L) = 2.0D0 * BLOCKS(N)%CVAR(I,1,K,L) - BLOCKS(N)%CVAR(I,2,K,L)
+!
+!                  ! j = npj
+!                  BLOCKS(N)%CVAR(I,BLOCKS(N)%NPJ,K,L) = 2.0D0 * BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ,K,L)&
+!                                     - BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ-1,K,L)
+!               END DO
+!               DO J = 0,BLOCKS(N)%NPJ
+!                  ! I = 0
+!                  BLOCKS(N)%CVAR(0,J,K,L) = 2.0D0 * BLOCKS(N)%CVAR(1,J,K,L) - BLOCKS(N)%CVAR(2,J,K,L)
+!                  ! I = npj
+!                  BLOCKS(N)%CVAR(BLOCKS(N)%NPI,J,K,L) = 2.0D0 * BLOCKS(N)%CVAR(BLOCKS(N)%NCI,J,K,L)&
+!                                     - BLOCKS(N)%CVAR(BLOCKS(N)%NCI-1,J,K,L)
+!               END DO
+!               DO I = 0,BLOCKS(N)%NPI,BLOCKS(N)%NPI
+!                  ! j = 0
+!                  BLOCKS(N)%CVAR(I,0,K,L) = 2.0D0 * BLOCKS(N)%CVAR(I,1,K,L) - BLOCKS(N)%CVAR(I,2,K,L)
+!                  ! j = npj
+!                  BLOCKS(N)%CVAR(I,BLOCKS(N)%NPJ,K,L) = 2.0D0 * BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ,K,L)&
+!                                     - BLOCKS(N)%CVAR(I,BLOCKS(N)%NCJ-1,K,L)
+!               END DO
+!
+!            END DO
+!         END DO
       ELSE IF (GLOBAL % AXSYM == -1) THEN
          DO N=1,GLOBAL%NBLOCK
             BLOCKS(N) % SWP(0,1,1,1) =2.0D0 * BLOCKS(N)%SWP(1,1,1,1) - BLOCKS(N)%SWP(2,1,1,1)
@@ -1035,8 +1157,6 @@ contains
       ELSE
          k = 1
          DO N=1,GLOBAL%NBLOCK
-
-
             DO L = 1,3
                DO I = 1,BLOCKS(N)%NCI
                   ! j = 0

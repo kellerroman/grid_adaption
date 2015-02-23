@@ -1,4 +1,4 @@
-SUBDIRS = control_file  1D schraeg o_grid o_grid_rectangle  nozzle_simple chamber_simple injector_simple penn_simple pennstate
+SUBDIRS = control_file 1D schraeg o_grid o_grid_rectangle o_grid_rectangle_with_normal nozzle_simple chamber_simple injector_simple penn_simple pennstate
 #SUBDIRS := ${shell find ./ -type d -print}
 SUBCLEAN = $(addsuffix .clean,$(SUBDIRS))
 .PHONY: subdirs $(SUBDIRS) clean $(SUBCLEAN)
