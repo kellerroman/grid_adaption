@@ -1,5 +1,6 @@
 module grid
 use const, only: DP
+USE DEBUG
 implicit none
 contains
    SUBROUTINE STR2UNSTR()
@@ -17,7 +18,7 @@ contains
 
       INTEGER :: NUMBER_OF_FACES,NACHBAR,F
 
-      REAL(KIND=8), PARAMETER :: ERROR = 1.0D-8
+      REAL(KIND=8), PARAMETER :: ERROR = 6.0D-7
 
       CHARACTER(LEN = 1) , PARAMETER :: FACES(6) = (/"W","E","S","N","B","F"/)
 
@@ -90,7 +91,7 @@ contains
       UNSTR%PKT_KNT  = -1
       UNSTR%PKT_SOLL = 0.0D0
 
-      IF (GLOBAL%DBG >= 1)  THEN
+      IF (DBG_GRID_COMMENTS)  THEN
          WRITE(*,"(A,I0)") "ANZAHL AN GITTERPUNKTE IM UNSTRUKTURIERTEN GITTER: ",UNSTR%NPKT
          WRITE(*,"(A,I0)") "ANZAHL AN KANTEN IM UNSTRUKTURIERTEN GITTER: ",UNSTR%NKNT
       END IF
@@ -114,8 +115,8 @@ contains
       BLOCK_LOOP: DO WHILE (BLOCKS_TO_PROCESS > 0)
          N = BLOCKS_LIST(1)
          BLOCKS_STATUS(N) = 2
-         IF (GLOBAL%DBG >= 1) &
-         write(*,*) "BLOCK",N,"of",GLOBAL%NBLOCK,"WIRD ABGEARBEITET",BLOCKS_TO_PROCESS
+         IF (DBG_GRID_COMMENTS) &
+         write(*,*) "BLOCK",N,"of",GLOBAL%NBLOCK,"WIRD ABGEARBEITET. IN LISTE:",BLOCKS_TO_PROCESS
          ALLOCATE( BLOCKS(N) % ASSOC (BLOCKS(N)%NPI,BLOCKS(N)%NPJ,BLOCKS(N)%NPK) )
          DO K = 1,BLOCKS(N) % NPK
          DO J = 1,BLOCKS(N) % NPJ
@@ -132,7 +133,7 @@ contains
                       BLOCKS(N) % BLOCK_CONNECTION(1,3) == 1) THEN
                       L = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % NPI
                       MYPKT = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % ASSOC(L,J,K)
-                      IF (GLOBAL%DBG >= 2) &
+                      IF (DBG_GRID_CONNECTIONS) &
                       WRITE(*,'("VERBINDUNG VON BLOCK ",I0,A," J = ",I0," AUF BLOCK ",I0,A," PUNKT: ",I0)') &
                               N,FACES(1),J,BLOCKS(N) % BLOCK_CONNECTION(1,1),FACES(BLOCKS(N) % BLOCK_CONNECTION(1,2)),MYPKT
 
@@ -141,7 +142,7 @@ contains
                       L = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % NPI
                       U = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % NPJ
                       MYPKT = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(1,1)) % ASSOC(U+1-J,L,K)
-                      IF (GLOBAL%DBG >= 2) &
+                      IF (DBG_GRID_CONNECTIONS) &
                       WRITE(*,'("VERBINDUNG VON BLOCK ",I0,A," J = ",I0," AUF BLOCK ",I0,A," PUNKT: ",I0)') &
                               N,FACES(1),J,BLOCKS(N) % BLOCK_CONNECTION(1,1),FACES(BLOCKS(N) % BLOCK_CONNECTION(1,2)),MYPKT
 
@@ -165,7 +166,7 @@ contains
                   IF (BLOCKS(N) % BLOCK_CONNECTION(2,2) == 1 .AND. &
                       BLOCKS(N) % BLOCK_CONNECTION(2,3) == 1) THEN
                       MYPKT = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(2,1)) % ASSOC(1,J,K)
-                      IF (GLOBAL%DBG >= 2) &
+                      IF (DBG_GRID_CONNECTIONS) &
                       WRITE(*,'("VERBINDUNG VON BLOCK ",I0,A," J = ",I0," AUF BLOCK ",I0,A," PUNKT: ",I0)') &
                               N,FACES(2),J,BLOCKS(N) % BLOCK_CONNECTION(2,1),FACES(BLOCKS(N) % BLOCK_CONNECTION(2,2)),MYPKT
                   ELSE
@@ -182,7 +183,7 @@ contains
                       L = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(3,1)) % NPJ
                       MYPKT = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(3,1)) % ASSOC(I,L,K)
 
-                      IF (GLOBAL%DBG >= 2) &
+                      IF (DBG_GRID_CONNECTIONS) &
                       WRITE(*,'("VERBINDUNG VON BLOCK ",I0,A," I = ",I0," AUF BLOCK ",I0,A," PUNKT: ",I0)') &
                               N,FACES(3),I,BLOCKS(N) % BLOCK_CONNECTION(3,1),FACES(BLOCKS(N) % BLOCK_CONNECTION(3,2)),MYPKT
                   ELSE IF (BLOCKS(N) % BLOCK_CONNECTION(3,2) == 2 .AND. &
@@ -190,7 +191,7 @@ contains
                       L = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(3,1)) % NPI
                       U = BLOCKS(N)%NPI ! BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(3,1)) % NPJ
                       MYPKT = BLOCKS(BLOCKS(N) % BLOCK_CONNECTION(3,1)) % ASSOC(L,U-I+1,K)
-                      IF (GLOBAL%DBG >= 2) &
+                      IF (DBG_GRID_CONNECTIONS) &
                       WRITE(*,'("VERBINDUNG VON BLOCK ",I0,A," I = ",I0," AUF BLOCK ",I0,A," PUNKT: ",I0)') &
                               N,FACES(3),I,BLOCKS(N) % BLOCK_CONNECTION(3,1),FACES(BLOCKS(N) % BLOCK_CONNECTION(3,2)),MYPKT
                   ELSE
@@ -290,10 +291,8 @@ contains
                   UNSTR%PKT_NKNT(L) = U
                   UNSTR%PKT_KNT(L,U) = MYKNT
                   UNSTR%PKT_NEIGH(L,U) = MYPKT
-#ifdef DEBUG
-                  IF (GLOBAL%DBG >= 2) &
+                  IF (DBG_GRID_KANTEN) &
                      WRITE(*,'("VERBINDE (X-DIR) ",I0," (",I0,",",I0,",",I0,") MIT ",I0," KANTE: ",I0)') MYPKT,I,J,K,L,MYKNT
-#endif
                END IF
 
                IF (DO_CONNECT_J .AND. J > 1) THEN! .AND. .NOT.(I == 1 .AND. BLOCKS(N) % BLOCK_CONNECTION(1,1) >= 1)) THEN
@@ -312,10 +311,8 @@ contains
                   UNSTR%PKT_NKNT(L) = U
                   UNSTR%PKT_KNT(L,U) = MYKNT
                   UNSTR%PKT_NEIGH(L,U) = MYPKT
-#ifdef DEBUG
-                  IF (GLOBAL%DBG >= 2) &
+                  IF (DBG_GRID_KANTEN) &
                     WRITE(*,'("VERBINDE (Y-DIR) ",I0," (",I0,",",I0,",",I0,") MIT ",I0," KANTE: ",I0)') MYPKT,I,J,K,L,MYKNT
-#endif
                END IF
 
                IF (DO_CONNECT_K .AND. K > 1) THEN! .AND. .NOT.(I == 1 .AND. BLOCKS(N) % BLOCK_CONNECTION(1,1) >= 1)) THEN
@@ -334,10 +331,8 @@ contains
                   UNSTR%PKT_NKNT(L) = U
                   UNSTR%PKT_KNT(L,U) = MYKNT
                   UNSTR%PKT_NEIGH(L,U) = MYPKT
-#ifdef DEBUG
-                  IF (GLOBAL%DBG >= 2) &
+                  IF (DBG_GRID_KANTEN) &
                     WRITE(*,'("VERBINDE (K-DIR) ",I0," (",I0,",",I0,",",I0,") MIT ",I0," KANTE: ",I0)') MYPKT,I,J,K,L,MYKNT
-#endif
                END IF
 
    !            ELSE IF (I == 1 .AND. J == 1) THEN
@@ -375,8 +370,9 @@ contains
                   BLOCKS_TO_PROCESS = BLOCKS_TO_PROCESS + 1
                   BLOCKS_LIST(BLOCKS_TO_PROCESS) = NACHBAR
                   BLOCKS_STATUS(NACHBAR) = 1
-                  IF (GLOBAL%DBG >= 1) &
-                  WRITE(*,'("FÜGE ",I0,"(",A,") AN STELLE ",I0)') NACHBAR,FACES(F),BLOCKS_TO_PROCESS
+                  IF (DBG_GRID_COMMENTS) &
+                  WRITE(*,'("FÜGE BLOCK ",I0,"(",A,") AN STELLE ",I0," ZUR ABARBEITUNGSLISTE HINZU")') &
+                  NACHBAR,FACES(F),BLOCKS_TO_PROCESS
 
                END IF
             END IF
@@ -393,22 +389,17 @@ contains
       DEALLOCATE ( BLOCKS_LIST )
       DEALLOCATE ( BLOCKS_STATUS )
       IF (nPKT /= UNSTR % NPKT) THEN
-#ifdef DEBUG
-         IF (GLOBAL%DBG >= 1)  THEN
+         IF (DBG_GRID_COMMENTS)  THEN
             WRITE(*,"(A,I0,A,I0)") "ANZAHL DER REALEN GITTERPUNKTE IM UNSTR. GITTER: ",nPKT," DIFF: ",UNSTR % NPKT-nPKT
-
          END IF
-#endif
          UNSTR % NPKT = NPKT
 
       END IF
       IF (MYKNT /= UNSTR % NKNT) THEN
-#ifdef DEBUG
-               IF (GLOBAL%DBG >= 1)  THEN
+         IF (DBG_GRID_COMMENTS)  THEN
             WRITE(*,"(A,I0,A,I0)") "ANZAHL AN REALEN KANTEN IM UNSTR. GITTER: ",MYKNT," DIFF: ",UNSTR % NKNT-MYKNT
 
          END IF
-#endif
          UNSTR % NKNT = MYKNT
 
       END IF
@@ -426,26 +417,24 @@ contains
    DO U = 1,UNSTR % NPKT
       !!! INNER GITTERPUNKTE WERDEN ÜBERSPRUNGEN
       IF ( UNSTR % PKT_TYPE(U) == 1) CYCLE
-#ifdef DEBUG
-      IF (GLOBAL%DBG >= 2)  THEN
+      IF (DBG_GRID_VERSCHIEB)  THEN
          I = UNSTR%PKT_REF(U,1)
          J = UNSTR%PKT_REF(U,2)
          K = UNSTR%PKT_REF(U,3)
          N = UNSTR%PKT_REF(U,4)
-         WRITE(*,*) U, N, I,J
-         WRITE(*,*) U,UNSTR % XYZ(U,1),UNSTR % XYZ(U,2)
+!         WRITE(*,*) U, N, I,J
+         WRITE(*,*) U,UNSTR % XYZ(U,1),UNSTR % XYZ(U,2),UNSTR % PKT_NKNT(U)
       END IF
-#endif
       I = 0
       J = 0
       !!! ALLE NACHBARPUNKT ÜBERPRÜFEN
       DO N = 1, UNSTR % PKT_NKNT(U)
          K = UNSTR % PKT_NEIGH(U,N)
-#ifdef DEBUG
-         IF (GLOBAL%DBG >= 2)  THEN
-            WRITE(*,*) K,UNSTR % XYZ(K,1),UNSTR % XYZ(K,2)
+         IF (DBG_GRID_VERSCHIEB)  THEN
+            WRITE(*,*) "--->",UNSTR % XYZ(K,1),UNSTR % XYZ(K,2) &
+                      ,ABS(UNSTR % XYZ(U,1) - UNSTR % XYZ(K,1)) &
+                      ,ABS(UNSTR % XYZ(U,2) - UNSTR % XYZ(K,2))
          END IF
-#endif
          ! ZÄHLER I sind PUNKTE MIT GLEICHEM y WERT -> SENKRECHTE WAND
          IF (ABS(UNSTR % XYZ(U,2) - UNSTR % XYZ(K,2)) <= ERROR) THEN
             I = I +1
@@ -573,11 +562,12 @@ contains
    END SUBROUTINE
    SUBROUTINE UNSTR2STR
    USE MOD_GLOBAL
+   USE CONST
    IMPLICIT NONE
 
    INTEGER :: N,I,J,K,UP,DIM
-   IF (GLOBAL%DBG >= 1)  THEN
-      WRITE(*,"(A)") "STRUKTURIERTES GITTER WIRD AUS DEN UNSTRUKTURIERTEN GITTER ERSTELLT"
+   IF (DBG_GRID_COMMENTS)  THEN
+      WRITE(*,"(A)") "STRUKTURIERTES GITTER WIRD AUS DEM UNSTRUKTURIERTEN GITTER ERSTELLT"
    end if
    IF (GLOBAL % AXSYM == 2) THEN
       WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","unstr2str"
@@ -598,15 +588,15 @@ contains
       END DO
    END DO
 
-   IF (GLOBAL%DBG >= 2)  THEN
-      N = 1
-      K = 1
-      DO J = 1,BLOCKS(N)%NPJ
-         DO I = 1,BLOCKS(N)%NPI
-            WRITE(*,*) BLOCKS(N) % ASSOC(I,J,K),BLOCKS(N) % XYZ(I,J,K,:)
-         END DO
-      END DO
-   END IF
+!   IF (GLOBAL%DBG >= 2)  THEN
+!      N = 1
+!      K = 1
+!      DO J = 1,BLOCKS(N)%NPJ
+!         DO I = 1,BLOCKS(N)%NPI
+!            WRITE(*,*) BLOCKS(N) % ASSOC(I,J,K),BLOCKS(N) % XYZ(I,J,K,:)
+!         END DO
+!      END DO
+!   END IF
 
 
    END SUBROUTINE

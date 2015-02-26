@@ -7,7 +7,7 @@ program git2paraview
     REAL(KIND=8),ALLOCATABLE :: xyz(:,:,:,:)
 
     OPEN(10,FILE="git.bin",FORM="UNFORMATTED",access="STREAM",STATUS="OLD")
-    !READ(10) AXSYM,NB
+!    READ(10) AXSYM,NB
 
     READ(10) NI,NJ
     NK = 1

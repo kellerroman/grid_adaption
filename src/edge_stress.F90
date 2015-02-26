@@ -4,12 +4,22 @@ implicit none
    private
    real(kind = dp), allocatable              :: CELL_INC_STRESS(:)
    !< Spannungsbetrag für das Edge Stretch Ratio
+   real(kind = dp), allocatable              :: CELL_EDGE_LENGTH_STRESS(:)
+   !< Spannungsbetrag für den Ausgleich der Zellkantenlängen
    integer, allocatable, save                :: KNT_NNEIGH(:)
    !< Anzahl der Relevanten Edges für den Größenvergleich
    integer, allocatable, save                :: KNT_NEIGH(:,:)
    !< IDs der Edges mit deren Größe die Aktuelle Edge verglichen werdne soll
+   integer, allocatable, save                :: cell_edges(:,:)
+   !< ID der Kanten pro Zelle 1-2 und 3-4 gehören zusammen
+
+
+   real(kind = dp),parameter                 :: cell_edge_force_inc = 1.01E0_dp
+   real(kind = dp),parameter                 :: cell_edge_force_dec = 0.99E0_dp
+
+
    real(kind = dp), parameter                :: stress_max = 1E20_DP
-   real(kind = dp), parameter                :: seitenver  = 1.3E0_DP
+   real(kind = dp), parameter                :: seitenver  = 1.4E0_DP
    public CALC_EDGE_STRESSES
    public INIT_EDGE_STRETCH
 contains
@@ -28,6 +38,8 @@ contains
       CALL ELLIPTIC_GRID_SMOOTHNING()
 
       CALL CALC_EDGE_STRETCH_STRESSES()
+
+      call calc_cell_edge_length_diff
 
       call calc_wall_refinement()
       conv_prob = .FALSE.
@@ -69,6 +81,7 @@ contains
       DO U = 1, UNSTR % NKNT
          P1 = UNSTR % KNT(U,1)
          P2 = UNSTR % KNT(U,2)
+!         UNSTR % KNT_SPANNUNG(U,1) = 1.0D-10
          UNSTR % KNT_SPANNUNG(U,1) = 1.0D0 * ABS( UNSTR % KNT_DN(U,1) )
       END DO
 
@@ -165,6 +178,44 @@ contains
 !      DEALLOCATE(winkel,lenge)
 !   END DO
    END SUBROUTINE CALC_EDGE_STRETCH_STRESSES
+
+   SUBROUTINE CALC_CELL_EDGE_LENGTH_DIFF
+   use mod_global
+   implicit none
+   integer :: i,j,k,b,nc,es
+   integer :: e1,e2
+   nc = 0
+   block_loop: do b = 1, global % nblock
+      k_loop: do k = 1, blocks(b) % nck
+         j_loop: do j = 1, blocks(b) % ncj
+            i_loop: do i = 1, blocks(b) % nci
+               nc = nc + 1
+               do es = 1,3,2 !!! first do 1&2 then 3&4
+                  e1 = cell_edges(nc,es)
+                  e2 = cell_edges(nc,es+1)
+                  if (unstr % knt_dn(e1,1) > 1.3E0_dp * unstr % knt_dn(e2,1) ) then
+                     CELL_EDGE_LENGTH_STRESS(e1) = MAX(1E-5_dp,CELL_EDGE_LENGTH_STRESS(e1)) * cell_edge_force_inc
+                     CELL_EDGE_LENGTH_STRESS(e2) = CELL_EDGE_LENGTH_STRESS(e2) * cell_edge_force_dec
+                  else if (unstr % knt_dn(e2,1) > 1.3E0_dp * unstr % knt_dn(e1,1) ) then
+                     CELL_EDGE_LENGTH_STRESS(e1) = CELL_EDGE_LENGTH_STRESS(e1) * cell_edge_force_dec
+                     CELL_EDGE_LENGTH_STRESS(e2) = MAX(1E-5_dp,CELL_EDGE_LENGTH_STRESS(e2)) * cell_edge_force_inc
+                  else
+                     CELL_EDGE_LENGTH_STRESS(e1) = CELL_EDGE_LENGTH_STRESS(e1) * cell_edge_force_dec
+                     CELL_EDGE_LENGTH_STRESS(e2) = CELL_EDGE_LENGTH_STRESS(e2) * cell_edge_force_dec
+                  end if
+               end do
+            end do i_loop
+         end do j_loop
+      end do k_loop
+   end do block_loop
+   do e1 = 1, unstr % nknt
+      UNSTR % KNT_SPANNUNG(e1,1)  = UNSTR % KNT_SPANNUNG(e1,1) + CELL_EDGE_LENGTH_STRESS(e1)
+   end do
+
+   END SUBROUTINE CALC_CELL_EDGE_LENGTH_DIFF
+
+
+
    SUBROUTINE INIT_EDGE_STRETCH
    ! INITIALISATION FOR THE EDGE STRETCH CONTROL ROUTINE
    ! ALLOCATION OF ARRAYS CELL_INC_STRESS and KNT_NEIGH
@@ -353,5 +404,51 @@ contains
                               ,UNSTR%PKT_REF(UNSTR%KNT(e,2),1:4)
       end do
    end if
+   call init_cell_edge_length_diff
    END SUBROUTINE INIT_EDGE_STRETCH
+   SUBROUTINE INIT_CELL_EDGE_LENGTH_DIFF
+   use mod_global
+   implicit none
+   integer :: i,j,k,b, ncell,nei
+
+   integer :: p1,p2,p3,p4
+
+   ncell = 0
+   do b = 1, global % nblock
+      ncell = ncell + blocks(b) % nci * blocks(b) % ncj * blocks(b) % nck
+   end do
+   allocate (cell_edges(ncell,4))
+   allocate (cell_edge_length_stress(unstr % nknt))
+   CELL_EDGE_LENGTH_STRESS = 0.0E0_DP
+   ncell = 0
+   block_loop: do b = 1, global % nblock
+      k_loop: do k = 1, blocks(b) % nck
+         j_loop: do j = 1, blocks(b) % ncj
+            i_loop: do i = 1, blocks(b) % nci
+               ncell = ncell + 1
+               p1 = blocks(b) % assoc(i  ,j  ,k)
+               p2 = blocks(b) % assoc(i+1,j  ,k)
+               p3 = blocks(b) % assoc(i  ,j+1,k)
+               p4 = blocks(b) % assoc(i+1,j+1,k)
+               do nei = 1, unstr % PKT_nknt(p1)
+                  if (unstr % pkt_neigh(p1,nei) == p2) then
+                     cell_edges(ncell,1) = unstr % pkt_knt(p1,nei)
+                  else if (unstr % pkt_neigh(p1,nei) == p3) then
+                     cell_edges(ncell,3) = unstr % pkt_knt(p1,nei)
+                  end if
+               end do
+               do nei = 1, unstr % PKT_nknt(p4)
+                  if (unstr % pkt_neigh(p4,nei) == p2) then
+                     cell_edges(ncell,4) = unstr % pkt_knt(p4,nei)
+                  else if (unstr % pkt_neigh(p4,nei) == p3) then
+                     cell_edges(ncell,2) = unstr % pkt_knt(p4,nei)
+                  end if
+               end do
+            end do i_loop
+         end do j_loop
+      end do k_loop
+   end do block_loop
+
+
+   END SUBROUTINE INIT_CELL_EDGE_LENGTH_DIFF
 end module edge_stress

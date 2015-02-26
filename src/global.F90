@@ -104,6 +104,7 @@ MODULE TYPES
 !< 2 - Randzelle: Kann nicht verschoben werden
 !< 3 - Randzelle: Verschiebbar in X-Richtung
 !< 4 - Randzellle Verschiebbar in Y-Richtung
+!< 5 - Wandnächste Zelle: Position wird fest vorgegeben
       INTEGER, ALLOCATABLE          :: PKT_NKNT(:)
 !< ANzAHL DER KANTEN an PUNKTE
       INTEGER, ALLOCATABLE          :: PKT_KNT(:,:)
@@ -149,4 +150,5 @@ MODULE CONST
    INTEGER, PARAMETER :: DP = KIND(1.0D+0)
 !   INTEGER,PARAMETER:: UML (8,3) = RESHAPE((/0,0,0,1,0,0,0,1,0,1,1,0,0,0,1,1,0,1,0,1,1,1,1,1/),(/8,3/))
    INTEGER,PARAMETER:: UML (8,3) = RESHAPE((/0,1,0,1,0,1,0,1,0,0,1,1,0,0,1,1,0,0,0,0,1,1,1,1/),(/8,3/))
+
 END MODULE

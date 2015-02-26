@@ -11,7 +11,6 @@ INTEGER :: DIM, U, K, KN, P1
 
 INTEGER :: N
 
-
 REAL(KIND=8) :: teilen
 !REAL(KIND=8) :: which(2,4)
 #ifdef DEBUG
@@ -24,10 +23,6 @@ IF (GLOBAL % AXSYM == 2) THEN
    WRITE(*,*) "3D NOCH NICHT UNTERSTÜTZT","unstrukt"
    STOP
 END IF
-
-
-
-
 
 IF ( GLOBAL % NODE_MOVEMENT_MECHNISM == 2) THEN
    UNSTR%PKT_DN = 0.0D+00
@@ -82,7 +77,6 @@ ELSE ! GLOBAL % NODE_MOVEMENT
       END DO
    END DO
 
-
 END IF !GLOBAL % NODE_MOVEMENT
 
 #ifdef DEBUG
@@ -104,26 +98,31 @@ DN_MAX = -1.0D+00
 DN_MAX_POS = 1
 DO U = 1,UNSTR%NPKT
    N = UNSTR % PKT_TYPE(U)
-   IF (N == 1 .OR. N == 3 ) THEN!( I > 1 .AND. I < BLOCKS(N) % NPI) THEN
-      UNSTR % XYZ(U,1) = UNSTR % XYZ(U,1) + UNSTR%PKT_DN(U,1) * global%faktor
-      DN_SUM = DN_SUM + ABS(UNSTR%PKT_DN(U,1))
-      IF (ABS(UNSTR%PKT_DN(U,1))>DN_MAX) THEN
-         DN_MAX = ABS(UNSTR%PKT_DN(U,1))
-         DN_MAX_POS = U
+   IF (N == 5) THEN
+      UNSTR % XYZ(U,1:2) = UNSTR % PKT_SOLL(U,1:2)
+
+   ELSE
+      IF (N == 1 .OR. N == 3 ) THEN!( I > 1 .AND. I < BLOCKS(N) % NPI) THEN
+         UNSTR % XYZ(U,1) = UNSTR % XYZ(U,1) + UNSTR%PKT_DN(U,1) * global%faktor
+         DN_SUM = DN_SUM + ABS(UNSTR%PKT_DN(U,1))
+         IF (ABS(UNSTR%PKT_DN(U,1))>DN_MAX) THEN
+            DN_MAX = ABS(UNSTR%PKT_DN(U,1))
+            DN_MAX_POS = U
+         END IF
+   !   ELSE
+   !      UNSTR%PKT_DN(U,1) = 0.0D0
       END IF
-!   ELSE
-!      UNSTR%PKT_DN(U,1) = 0.0D0
-   END IF
-!   IF ( J > 1 .AND. J < BLOCKS(N) % NPJ) THEN
-   IF (N == 1 .OR. N == 4 ) THEN
-      UNSTR % XYZ(U,2) = UNSTR % XYZ(U,2) + UNSTR%PKT_DN(U,2) * global%faktor
-      DN_SUM = DN_SUM + ABS(UNSTR%PKT_DN(U,2))
-      IF (ABS(UNSTR%PKT_DN(U,2))>DN_MAX) THEN
-         DN_MAX = ABS(UNSTR%PKT_DN(U,2))
-         DN_MAX_POS = U
+   !   IF ( J > 1 .AND. J < BLOCKS(N) % NPJ) THEN
+      IF (N == 1 .OR. N == 4 ) THEN
+         UNSTR % XYZ(U,2) = UNSTR % XYZ(U,2) + UNSTR%PKT_DN(U,2) * global%faktor
+         DN_SUM = DN_SUM + ABS(UNSTR%PKT_DN(U,2))
+         IF (ABS(UNSTR%PKT_DN(U,2))>DN_MAX) THEN
+            DN_MAX = ABS(UNSTR%PKT_DN(U,2))
+            DN_MAX_POS = U
+         END IF
+   !   ELSE
+   !      UNSTR%PKT_DN(U,2)  = 0.0D0
       END IF
-!   ELSE
-!      UNSTR%PKT_DN(U,2)  = 0.0D0
    END IF
 END DO
 

@@ -16,7 +16,7 @@ INTEGER, ALLOCATABLE, SAVE             :: PKT_CTW(:)
 INTEGER, ALLOCATABLE, SAVE             :: PKT_AW(:)
 !< Wandpunkt (At Wall)
 REAL(KIND = DP), ALLOCATABLE,SAVE      :: PKT_DXY(:,:)
-!< Differenzvektor des idealen Wandnäcshten Punktes vom wandnächsten Punkt
+!< Differenzvektor des idealen Wandnächsten Punktes vom wandnächsten Punkt
 !< für Type = 2 und 3 sehr einfach, da in x bzw y Richtung
 !< 1 Parameter ist Punkt_ID , zweiter Dimension
 
@@ -211,6 +211,7 @@ contains
                      NKNT = NKNT + 1
                      P1(NKNT) = BLOCKS(b) % assoc(i ,j ,k)
                      P2(NKNT) = BLOCKS(b) % assoc(i2,j2,k2)
+                     UNSTR % PKT_TYPE(P2(NKNT)) = 5
                   end do
                end do
             end if
@@ -228,6 +229,7 @@ contains
                      NKNT = NKNT + 1
                      P1(NKNT) = BLOCKS(b) % assoc(i ,j ,k)
                      P2(NKNT) = BLOCKS(b) % assoc(i2,j2,k2)
+                     UNSTR % PKT_TYPE(P2(NKNT)) = 5
                   end do
                end do
             end if
@@ -244,6 +246,7 @@ contains
                      NKNT = NKNT + 1
                      P1(NKNT) = BLOCKS(b) % assoc(i ,j ,k)
                      P2(NKNT) = BLOCKS(b) % assoc(i2,j2,k2)
+                     UNSTR % PKT_TYPE(P2(NKNT)) = 5
                   end do
                end do
             end if
@@ -259,6 +262,7 @@ contains
                      NKNT = NKNT + 1
                      P1(NKNT) = BLOCKS(b) % assoc(i ,j ,k)
                      P2(NKNT) = BLOCKS(b) % assoc(i2,j2,k2)
+                     UNSTR % PKT_TYPE(P2(NKNT)) = 5
                   end do
                end do
             end if
@@ -562,57 +566,58 @@ contains
             do i = 1,NKNT
                p1    = PKT_AW(I)
                p2    = PKT_CTW(I)
-               ipos  = unstr % xyz(p1,1:2) + PKT_DXY(I,:)
-               fvec   = ipos - unstr % xyz(p2,1:2)
-               abs_fvec =  sqrt(fvec(1)*fvec(1)+fvec(2)*fvec(2))
-               UNSTR % PKT_SOLL(p2,:) = fvec
-               fvec = fvec / abs_fvec
-               nedge = unstr % PKT_NKNT(p2)
-
-               do k = 1, nedge
-                  e = unstr % PKT_KNT (p2,k)
-                  evec(k,:) = unstr % KNT_DN(e,2:3)
-                  !! ORIENTIERUNG DES VEKTORS UMDREHEN, WENN ER AUF P2 ZEIGT
-                  if (p2 == unstr % KNT(e,2) ) then
-                     evec(k,:) = - evec(k,:)
-                  end if
-                  evec(k,:) = evec(k,:) / sqrt(evec(k,1)*evec(k,1)+evec(k,2)*evec(k,2))
-                  sp(k) = dot_product(fvec,evec(k,:))
-                  sort(k) = k
-                  e = k+1
-                  ! SORTIEREN DER ede_vectoren zum einfachsten kombinieren des force vectors
-                  if (k > 1) then
-                     do
-                        e = e-1
-                        if (sp(sort(e-1)) < sp(sort(e)) ) then
-                           tempsort = sort(e-1)
-                           sort(e-1) = sort(e)
-                           sort(e) = tempsort
-                        else
-                           exit
-                        end if
-                        if (e == 2) exit
-                     end do
-                  end if
-
-               end do
-!               write(*,*) sort(1:nedge)
-!               write(*,'(6(ES12.5,X))') unstr % xyz(p2,1:2), ipos,fvec
-!               write(*,'(3(ES12.5,X))') (evec(k,:),sp(k),k=1,nedge)
-               ! edge_vector == force vector (normiert)
-               ! kraft wird einfach auf diese eine edge berechnet
-!               if (sp(sort(1)) >= 9.0D-1) then
-
-                  is2should = abs_fvec / wall_dist
-
-                  is2should = MIN(MAX_INC, is2should)
-
-                  is2should = MAX(MIN_INC, is2should)
-
-                  KNT_FORCE(i) = KNT_FORCE(i) * is2should
-
-                  UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) =  &
-                  UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) + abs_fvec!KNT_FORCE(i)
+               UNSTR % PKT_SOLL(p2,:) = unstr % xyz(p1,1:2) + PKT_DXY(I,:)
+!               ipos  = unstr % xyz(p1,1:2) + PKT_DXY(I,:)
+!               fvec   = ipos - unstr % xyz(p2,1:2)
+!               abs_fvec =  sqrt(fvec(1)*fvec(1)+fvec(2)*fvec(2))
+!               UNSTR % PKT_SOLL(p2,:) = fvec
+!               fvec = fvec / abs_fvec
+!               nedge = unstr % PKT_NKNT(p2)
+!
+!               do k = 1, nedge
+!                  e = unstr % PKT_KNT (p2,k)
+!                  evec(k,:) = unstr % KNT_DN(e,2:3)
+!                  !! ORIENTIERUNG DES VEKTORS UMDREHEN, WENN ER AUF P2 ZEIGT
+!                  if (p2 == unstr % KNT(e,2) ) then
+!                     evec(k,:) = - evec(k,:)
+!                  end if
+!                  evec(k,:) = evec(k,:) / sqrt(evec(k,1)*evec(k,1)+evec(k,2)*evec(k,2))
+!                  sp(k) = dot_product(fvec,evec(k,:))
+!                  sort(k) = k
+!                  e = k+1
+!                  ! SORTIEREN DER ede_vectoren zum einfachsten kombinieren des force vectors
+!                  if (k > 1) then
+!                     do
+!                        e = e-1
+!                        if (sp(sort(e-1)) < sp(sort(e)) ) then
+!                           tempsort = sort(e-1)
+!                           sort(e-1) = sort(e)
+!                           sort(e) = tempsort
+!                        else
+!                           exit
+!                        end if
+!                        if (e == 2) exit
+!                     end do
+!                  end if
+!
+!               end do
+!!               write(*,*) sort(1:nedge)
+!!               write(*,'(6(ES12.5,X))') unstr % xyz(p2,1:2), ipos,fvec
+!!               write(*,'(3(ES12.5,X))') (evec(k,:),sp(k),k=1,nedge)
+!               ! edge_vector == force vector (normiert)
+!               ! kraft wird einfach auf diese eine edge berechnet
+!!               if (sp(sort(1)) >= 9.0D-1) then
+!
+!                  is2should = abs_fvec / wall_dist
+!
+!                  is2should = MIN(MAX_INC, is2should)
+!
+!                  is2should = MAX(MIN_INC, is2should)
+!
+!                  KNT_FORCE(i) = KNT_FORCE(i) * is2should
+!
+!                  UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) =  &
+!                  UNSTR % KNT_SPANNUNG(UNSTR % PKT_KNT(p2,sort(1)),1) + abs_fvec!KNT_FORCE(i)
 !               else
 !                  write(*,*) p1,sp(sort(1:nedge))
 !

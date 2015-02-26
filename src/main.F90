@@ -21,6 +21,7 @@ program grid_adaption
    use init_mod, only: init
    use wall_refinement, only: check_wall_refinement
    use edge_stress
+   use debug
    implicit none
 
 
@@ -36,6 +37,8 @@ program grid_adaption
    WRITE(*,'(A)') "VERSION "//VERSION//" LAST CHANGE "//LAST_CHANGE
 
    CALL INPUT_CONTROL()
+
+   CALL init_debug_levels
 
    WRITE(*,'(A)') "RUNNING ADAPTATION ON "//TRIM(GLOBAL % GIT_IN)
 

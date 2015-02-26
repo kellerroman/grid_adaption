@@ -15,7 +15,8 @@ _SOURCES= global.F90 \
           init.F90 \
           wall_refinement.F90 \
           utils.F90 \
-          edge_stress.F90 
+          edge_stress.F90 \
+          debug.F90
 
 SOURCES = $(patsubst %,$(SOURCE_DIR)/%,$(_SOURCES))
 OBJECTS=$(_SOURCES:.F90=.o)
@@ -31,24 +32,27 @@ $(EXECUTABLE):  $(OBJECTS) $(SOURCE_DIR)/main.F90
 global.o: $(SOURCE_DIR)/global.F90
 	$(FC) -c $(CFLAGS) $^ -o $@
 
-io.o: $(SOURCE_DIR)/io.F90 grid.o global.o utils.o wall_refinement.o
+io.o: $(SOURCE_DIR)/io.F90 grid.o global.o utils.o wall_refinement.o debug.o
 	$(FC) -c $(CFLAGS) $< -o $@
 	
-grid.o:	$(SOURCE_DIR)/grid.F90 global.o
+grid.o:	$(SOURCE_DIR)/grid.F90 global.o debug.o
 	$(FC) -c $(CFLAGS) $< -o $@
 
-init.o:	$(SOURCE_DIR)/init.F90 global.o grid.o edge_stress.o
+init.o:	$(SOURCE_DIR)/init.F90 global.o grid.o edge_stress.o debug.o
 	$(FC) -c $(CFLAGS) $< -o $@	
 	
-wall_refinement.o: $(SOURCE_DIR)/wall_refinement.F90 global.o utils.o
+wall_refinement.o: $(SOURCE_DIR)/wall_refinement.F90 global.o utils.o debug.o
 	$(FC) -c $(CFLAGS) $< -o $@	
 	
-edge_stress.o: $(SOURCE_DIR)/edge_stress.F90 global.o utils.o wall_refinement.o
+edge_stress.o: $(SOURCE_DIR)/edge_stress.F90 global.o utils.o wall_refinement.o debug.o
 	$(FC) -c $(CFLAGS) $< -o $@   
    	
 utils.o: $(SOURCE_DIR)/utils.F90 global.o
 	$(FC) -c $(CFLAGS) $< -o $@	
-	
+
+debug.o: $(SOURCE_DIR)/debug.F90 global.o
+	$(FC) -c $(CFLAGS) $< -o $@ 
+    	
 .PHONY: clean solver
 
 clean:
