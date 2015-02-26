@@ -1,0 +1,370 @@
+MODULE TYPE_DEF
+
+   TYPE :: TBLOCK
+      INTEGER :: NI
+      !< GITTERPUNKTE IN I-RICHTUNG
+      INTEGER :: NJ
+      !< GITTERPUNKTE IN J-RICHTUNG
+      INTEGER :: NK
+      !< GITTERPUNKTE IN K-RICHTUNG
+
+      REAL(KIND=8),ALLOCATABLE :: XYZ(:,:,:,:)
+      !< GITTER-PUNKT-KOORDIANTEN (NI,NJ,NK,DIM)
+      INTEGER :: CNI
+      !< GITTERZELLEN IN I-RICHTUNG
+      INTEGER :: CNJ
+      !< GITTERZELLEN IN J-RICHTUNG
+      INTEGER :: CNK
+      !< GITTERZELLEN IN K-RICHTUNG
+      REAL(KIND=8),ALLOCATABLE :: CVAR(:,:,:,:)
+      !< ZELL-MITTELPUNKT VARIABLEN WERTE (CNI,CNJ,CNK,NVAR)
+      REAL(KIND=8),ALLOCATABLE :: CXYZ(:,:,:,:)
+      !< ZELL-MITTELPUNKT-KOORDIANTEN (CNI,CNJ,CNK,DIM)
+      INTEGER, ALLOCATABLE :: CSC(:,:,:)
+      !< ANZAHL DER DURCHSUCHTEN ZELLEN FÜR DIE JEWEILIGE ZELLE
+      REAL(KIND=8),ALLOCATABLE :: DIST(:,:,:)
+      !< ABSTAND VON DER URSPRUNGSZELLE
+
+      INTEGER :: BLOCK_CONNECTION (6,3)
+      !< GIBT BLOCKVERBDINUNG DES BLOCKES AN: (FACE,VALUE)
+      !< FACE: 1 = W, 2 = E, 3 = S, 4 = N, 5 = B, 6 = F
+      !< VALUE: 1 = BLOCKNUMMER, 2= FACE DES NACHBAR_BLOCKS, 3 = PERMUTATION
+
+   END TYPE
+
+END MODULE
+
+MODULE CONFIG
+
+INTEGER, PARAMETER :: DEBUG_UNIT = 24
+
+LOGICAL :: VERBOSE = .TRUE.
+
+LOGICAL :: DEBUG = .FALSE.
+
+LOGICAL :: PRINT_SEARCHED_CELLS = .FALSE.
+
+LOGICAL :: PRINT_DISTANCE = .FALSE.
+
+INTEGER :: FIND_NEXT_CELL_MODE = 1
+!< ART WIE DIE NAHELIEGENSTE ZELLE GESUCHT WERDEN SOLL:
+!< 1: Bruteforce: Alle Zellen durchsuchen
+!< 2: ZellnachbarSuche: Ausgehend von einem StartZelle werden alle Nachbarn verglichen,
+!<    bis keine Annäherung mehr stattfindet
+
+END MODULE
+
+PROGRAM INTERPOLATE
+
+!AUTHOR:       ROMAN KELLER
+!START DATE:   28.05.2014
+!LAST CHANGES: 06.06.2014
+!PURPOSE:      PROGRAMM ZUM INTERPOLIEREN EINER LÖSUNG AUF EIN ANDERES GITTER
+! BENÖTIGTE DATEIEN: Solution IN (si), Git IN (gi), Solution Out (so) und Git Out(go) [bzw. Git2 IN]
+! CHANGELOG:
+! 28.05.2014, RK: START AUF BASIS VON RESTAR
+! 02.06.2014, RK: BRUTEFORCE Durchsuchung aller Zellen
+! 03.06.2014, RK: Nearest Neighbour per Zellnachbarsuche
+! 06.06.2014, RK: Parameterübergabe angepasst
+! 24.09.2014, RK: PRINT SEARCHED CELLS & PRINT DISTANCE
+! 24.09.2014, RK: Diagonale Zellen werden nicht mehr überprüft
+! 24.09.2014, RK: BLOCK-CONNECTIONS from CONNECT übernommen
+! TODO: DOPPELÜBERPRÜFUNGEN VERHINDERN MIT RICHTUNGSSPEICHERUNG
+
+
+USE TYPE_DEF
+USE CONFIG
+IMPLICIT NONE
+
+INTEGER::b,v,i,j,k,b2,i2,j2,k2                                    ! Schleifenindices
+CHARACTER(LEN=50) :: file_git_in, file_git_out,file_sol_in,file_sol_out
+
+!< NÄCHSTE ZELLE FÜR DIE ZELLE MIT I == 1
+
+
+INTEGER :: AXSYM
+INTEGER :: NB
+INTEGER :: GITDIM
+
+INTEGER, ALLOCATABLE :: WRITE_BLOCK(:)
+
+
+TYPE(TBLOCK),ALLOCATABLE,DIMENSION(:) :: GIT
+
+
+INTEGER :: argc, COMMAND_ARGUMENT_COUNT
+CHARACTER(LEN=4) :: arg
+
+LOGICAL :: GI_GIVEN = .FALSE.
+LOGICAL :: GO_GIVEN = .FALSE.
+LOGICAL :: SI_GIVEN = .FALSE.
+LOGICAL :: SO_GIVEN = .FALSE.
+
+LOGICAL :: GI_NEXT = .FALSE.
+LOGICAL :: GO_NEXT = .FALSE.
+LOGICAL :: SI_NEXT = .FALSE.
+LOGICAL :: SO_NEXT = .FALSE.
+LOGICAL :: FNC_NEXT = .FALSE.
+
+argc=command_argument_count()
+
+IF(argc >= 4)THEN
+  DO I=1,argc
+    IF (GI_NEXT) THEN
+      CALL GET_COMMAND_ARGUMENT(I,file_git_in)
+      GI_NEXT = .FALSE.
+      GI_GIVEN = .TRUE.
+    ELSE IF (GO_NEXT) THEN
+      CALL GET_COMMAND_ARGUMENT(I,file_git_out)
+      GO_NEXT = .FALSE.
+      GO_GIVEN = .TRUE.
+    ELSE
+      CALL GET_COMMAND_ARGUMENT(I,arg)
+       SELECT CASE (TRIM(arg))
+         CASE ("-s")
+           VERBOSE = .FALSE.
+         CASE ("-gi")
+           GI_NEXT = .TRUE.
+         CASE ("-go")
+           GO_NEXT = .TRUE.
+         CASE ("-d")
+            DEBUG = .TRUE.
+         CASE ("-fnc")
+            FNC_NEXT = .TRUE.
+         CASE ("-h")
+           CALL INFO_DIALOG()
+           STOP
+         CASE DEFAULT
+           CALL INFO_DIALOG()
+           STOP "Unzulaessiges Kommandozeilenargument!"
+       END SELECT
+    END IF
+  END DO
+ELSE
+   CALL INFO_DIALOG()
+   STOP
+END IF
+
+
+!! TESTEN OB IN DATEIEN EXISTIEREN
+IF (.NOT. GI_GIVEN) THEN
+   STOP "KEINE GITTER INPUT DATEIN ANGEGEBEN"
+END IF
+IF (.NOT.GO_GIVEN) THEN
+   STOP "KEINE GITTER OUTPUT DATEIN ANGEGEBEN"
+END IF
+
+IF (VERBOSE) THEN
+   WRITE(*,'("======================= SIMPLIFY GRID BY ROMAN KELLER =======================")')
+   WRITE(*,'(A)') "GITTER IN: "//TRIM(file_git_in)
+   WRITE(*,'(A)') "GITTER OUT: "//TRIM(file_git_out)
+END IF
+
+CALL READ_GIT(GIT , TRIM(file_git_in) , "GIT_IN" , AXSYM , NB)
+ALLOCATE(WRITE_BLOCK(NB))
+WRITE_BLOCK = 1
+
+WRITE_BLOCK(1) = 1
+!WRITE_BLOCK(2) = 1
+!WRITE_BLOCK(4) = 1
+
+!!! BEGRADIGEN DES INLETS
+b = 6
+DO I = 1,GIT(B) % NI-1
+      GIT(B) % XYZ(I,:,1,2) = GIT(B) % XYZ(GIT(B) % NI,:,1,2)
+END DO
+
+B = 3
+GIT(B) % NI = GIT(B) % NI -30
+B = 5
+GIT(B) % NI = GIT(B) % NI -30
+B = 8
+GIT(B) % NI = GIT(B) % NI -30
+B = 9
+GIT(B) % NI = GIT(B) % NI -30
+
+CALL WRITE_GIT(GIT, TRIM(file_git_out), "GIT OUT", AXSYM, NB,WRITE_BLOCK)
+
+CONTAINS
+
+SUBROUTINE INFO_DIALOG()
+   IMPLICIT NONE
+   WRITE(*,'(A)') "PROGRAM INTERPOLATE BY ROMAN KELLER"
+   WRITE(*,'(A)') "Erstellt git_out.bin aus git_in.bin"
+   WRITE(*,'(A)') "USAGE: interpolate -gi 'git_in.bin' -go 'git_out.bin' [Param]"
+   WRITE(*,'(A)') "       -s SILENT: NO INFORMATIONAL OUTPUT"
+   WRITE(*,'(A)') "       -h HELP: Dieser Hilfedialog"
+END SUBROUTINE INFO_DIALOG
+
+SUBROUTINE READ_GIT(GIT,FILENAME,GITNAME,AXSYM,NB)
+USE TYPE_DEF
+USE CONFIG
+IMPLICIT NONE
+INTEGER, PARAMETER :: GIT_UNIT = 25
+
+
+TYPE(TBLOCK),ALLOCATABLE,DIMENSION(:), INTENT(OUT) :: GIT
+CHARACTER(LEN=*), INTENT(IN) :: FILENAME
+CHARACTER(LEN=*), INTENT(IN) :: GITNAME
+INTEGER, INTENT(OUT) :: AXSYM
+INTEGER, INTENT(OUT) :: NB
+
+LOGICAL :: FEXISTS
+
+INTEGER :: GITDIM
+
+LOGICAL :: FOUND
+
+
+INTEGER :: B,I,J,K,V
+
+INTEGER :: nI,nJ,nK
+
+IF (DEBUG) THEN
+   WRITE(DEBUG_UNIT,*)
+   WRITE(DEBUG_UNIT,'(2A)') '==================================================', &
+                            '=================================================='
+   WRITE(DEBUG_UNIT,'(2A,X,A)') "OPENING ",GITNAME,TRIM(FILENAME)
+END IF
+INQUIRE(FILE=TRIM(FILENAME),EXIST=FEXISTS)
+IF(FEXISTS .EQV. .FALSE.) THEN
+   WRITE(*,*) "GITTER INPUT DATEI konnte nicht gefunden werden: " // TRIM(FILENAME)
+   STOP
+END IF
+OPEN(GIT_UNIT,FILE=TRIM(FILENAME),FORM="UNFORMATTED",access="STREAM",STATUS="OLD")
+READ(GIT_UNIT) AXSYM,NB
+IF (DEBUG) WRITE(DEBUG_UNIT,'(2(A,X,I0,5X))') "AXSYM:",AXSYM,"NUMBER_OF_BLOCKS:",NB
+IF (AXSYM == 2) THEN
+   GITDIM = 3
+ELSE
+   GITDIM = 2
+END IF
+
+ALLOCATE(GIT(NB))
+
+IF (DEBUG) WRITE(DEBUG_UNIT,'(4(A5,X))') "BLOCK","NI","NJ","NK"
+
+DO B = 1,NB
+   IF (AXSYM == 2) THEN
+      READ(GIT_UNIT) GIT(B) % NI, GIT(B) % NJ, GIT(B) % NK
+      GIT(B) % CNI = GIT(B) % NI - 1
+      GIT(B) % CNJ = GIT(B) % NJ - 1
+      GIT(B) % CNK = GIT(B) % NK - 1
+   ELSE
+      READ(GIT_UNIT) GIT(B) % NI, GIT(B) % NJ
+      GIT(B) % NK = 1
+      GIT(B) % CNI = GIT(B) % NI - 1
+      GIT(B) % CNJ = GIT(B) % NJ - 1
+      GIT(B) % CNK = 1
+   END IF
+
+   IF (DEBUG) WRITE(DEBUG_UNIT,'(4(I5,X))') B, GIT(B) % NI, GIT(B) % NJ, GIT(B) % NK
+
+   ALLOCATE (GIT(B) % XYZ(GIT(B) % NI, GIT(B) % NJ, GIT(B) % NK, GITDIM))
+
+END DO !B= 1,NB  SCHLEIFE ÜBER BLÖCKE GIT
+
+DO B = 1,NB
+   DO k = 1,GIT(B) %  NK
+      DO j = 1,GIT(B) % NJ
+         DO i= 1,GIT(B) % NI
+            READ(GIT_UNIT) (GIT(B) % XYZ(I,J,K,V),v=1,GITDIM)
+         END DO
+      END DO
+   END DO
+END DO !B= 1,NB  SCHLEIFE ÜBER BLÖCKE GIT IN
+
+IF (VERBOSE) THEN
+   WRITE(*,*)
+   WRITE(*,'("========== ",A," =========")') GITNAME
+   IF(AXSYM == 2) THEN
+      WRITE(*,'("3D SIMULATION")')
+   ELSE IF (AXSYM == 1) THEN
+      WRITE(*,'("2D ROTATIONSYMETRISCHE SIMULATION")')
+   ELSE
+      WRITE(*,'("2D SIMULATION")')
+   END IF
+   WRITE(*,'("BLOCKS ON FILE:         ",I0)') NB
+   WRITE(*,'(4(A5,X))') "BLOCK","NI","NJ","NK"
+   DO B = 1,NB
+      WRITE(*,'(4(I5,X))') B, GIT(B) % NI, GIT(B) % NJ, GIT(B) % NK
+   END DO
+END IF
+
+
+CLOSE(GIT_UNIT)
+END SUBROUTINE
+
+SUBROUTINE WRITE_GIT(GIT,FILENAME,GITNAME,AXSYM,NB,WRITE_BLOCK)
+USE TYPE_DEF
+USE CONFIG
+IMPLICIT NONE
+INTEGER, PARAMETER :: GIT_UNIT = 25
+
+
+TYPE(TBLOCK),ALLOCATABLE,DIMENSION(:), INTENT(IN) :: GIT
+CHARACTER(LEN=*), INTENT(IN) :: FILENAME
+CHARACTER(LEN=*), INTENT(IN) :: GITNAME
+INTEGER, INTENT(IN) :: WRITE_BLOCK(NB)
+INTEGER, INTENT(IN) :: AXSYM
+INTEGER, INTENT(IN) :: NB
+
+
+INTEGER :: GITDIM
+
+INTEGER :: B,I,J,K,V
+
+INTEGER :: nI,nJ,nK
+I = 0
+DO B = 1,NB
+   IF (WRITE_BLOCK(B) == 1) THEN
+      I = i + 1
+   END IF
+   WRITE(*,*) B,I,WRITE_BLOCK(B)
+END DO
+
+WRITE(*,*) "WRITING",I,"BLOCKS OUT"
+
+OPEN(GIT_UNIT,FILE=TRIM(FILENAME),FORM="UNFORMATTED",access="STREAM")
+
+
+WRITE(GIT_UNIT) AXSYM,I
+IF (AXSYM == 2) THEN
+   GITDIM = 3
+ELSE
+   GITDIM = 2
+END IF
+
+DO B = 1,NB
+   IF (WRITE_BLOCK(B) /= 1) CYCLE
+   IF (AXSYM == 2) THEN
+      WRITE(GIT_UNIT) GIT(B) % NI, GIT(B) % NJ, GIT(B) % NK
+   ELSE
+      nI = GIT(B) % NI
+      !IF (B == 1) nI = nI /2 +1
+      nJ = GIT(B) % NJ
+      nJ = nJ /2 +1
+      WRITE(GIT_UNIT) NI,NJ
+      WRITE(*,*) B,NI,NJ
+   END IF
+
+END DO !B= 1,NB  SCHLEIFE ÜBER BLÖCKE GIT
+
+DO B = 1,NB
+   IF (WRITE_BLOCK(B) /= 1) CYCLE
+   nI = 1
+   !if (B == 1) nI = 2
+   DO k = 1,GIT(B) %  NK!,2
+      DO j = 1,GIT(B) % NJ,2
+         DO i= 1,GIT(B) % NI,nI
+            WRITE(GIT_UNIT) (GIT(B) % XYZ(I,J,K,V),v=1,GITDIM)
+
+         END DO
+      END DO
+   END DO
+   WRITE(*,*) I,J,K
+END DO !B= 1,NB  SCHLEIFE ÜBER BLÖCKE GIT IN
+
+CLOSE(GIT_UNIT)
+END SUBROUTINE
+END PROGRAM INTERPOLATE
