@@ -19,7 +19,7 @@ implicit none
 
 
    real(kind = dp), parameter                :: stress_max = 1E20_DP
-   real(kind = dp), parameter                :: seitenver  = 1.4E0_DP
+   real(kind = dp), parameter                :: seitenver  = 1.2E0_DP
    public CALC_EDGE_STRESSES
    public INIT_EDGE_STRETCH
 contains
@@ -39,7 +39,7 @@ contains
 
       CALL CALC_EDGE_STRETCH_STRESSES()
 
-      call calc_cell_edge_length_diff
+!      call calc_cell_edge_length_diff
 
       call calc_wall_refinement()
       conv_prob = .FALSE.
@@ -57,7 +57,7 @@ contains
       if (conv_prob .and. iteration_output) then
          write(*,'(A)') "WARNING in calc_edge_stresses"
          write(*,'(A,X,I0,X,A)') "Convergence Problems: Edge Stress too high in",conv_prob_count,"Cells"
-         write(*,'(A,X,ES7.1)') "Limited to EDGE_STRESS_MAX =",stress_max
+         write(*,'(A,X,ES8.1)') "Limited to EDGE_STRESS_MAX =",stress_max
       end if
    END SUBROUTINE CALC_EDGE_STRESSES
 
@@ -82,7 +82,7 @@ contains
          P1 = UNSTR % KNT(U,1)
          P2 = UNSTR % KNT(U,2)
 !         UNSTR % KNT_SPANNUNG(U,1) = 1.0D-10
-         UNSTR % KNT_SPANNUNG(U,1) = 1.0D0 * ABS( UNSTR % KNT_DN(U,1) )
+         UNSTR % KNT_SPANNUNG(U,1) = 5.0E0_dp * ABS( UNSTR % KNT_DN(U,1) )
       END DO
 
    END SUBROUTINE

@@ -1,6 +1,6 @@
 OBJECTS_DIR= obj
-REALMAKEFILE=../src/Makefile.real
-TOOLMAKEFILE=../tools/Makefile.tools
+REALMAKEFILE=../src/Makefile.in
+TOOLMAKEFILE=../tools/Makefile.in
 
 all: tools solver
 

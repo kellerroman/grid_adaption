@@ -1,0 +1,8 @@
+$(OBJECTS_DIR)/main.o: $(OBJECTS_DIR)/global.o $(OBJECTS_DIR)/io.o $(OBJECTS_DIR)/grid.o $(OBJECTS_DIR)/edge_stress.o $(OBJECTS_DIR)/debug.o $(OBJECTS_DIR)/init.o $(OBJECTS_DIR)/resize.o $(OBJECTS_DIR)/wall_refinement.o
+$(OBJECTS_DIR)/gradient.o: $(OBJECTS_DIR)/global.o
+$(OBJECTS_DIR)/grid.o: $(OBJECTS_DIR)/debug.o $(OBJECTS_DIR)/global.o
+$(OBJECTS_DIR)/resize.o: $(OBJECTS_DIR)/global.o
+$(OBJECTS_DIR)/io.o: $(OBJECTS_DIR)/global.o $(OBJECTS_DIR)/wall_refinement.o
+$(OBJECTS_DIR)/edge_stress.o: $(OBJECTS_DIR)/global.o $(OBJECTS_DIR)/wall_refinement.o
+$(OBJECTS_DIR)/wall_refinement.o: $(OBJECTS_DIR)/global.o
+$(OBJECTS_DIR)/init.o: $(OBJECTS_DIR)/global.o $(OBJECTS_DIR)/grid.o $(OBJECTS_DIR)/wall_refinement.o $(OBJECTS_DIR)/edge_stress.o

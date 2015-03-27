@@ -1,0 +1,42 @@
+FC=gfortran
+FC=ifort
+
+#CFLAGS  = -Wconversion -Wall -Wextra -fbounds-check
+#CFLAGS += -DDEBUG #Unnecessary comments are oppressed
+CFLAGS += -O3
+
+OBJECTS_DIR = .
+EXECUTABLE = ../bin/grid_adapt
+SOURCE_DIR = ../src
+SOURCE_DIR_ALL = $(sort $(shell find $(SOURCE_DIR) -type d -not -path '*/.*'))
+VPATH := $(SOURCE_DIR_ALL)
+
+include $(SOURCE_DIR)/inc_Makefile_src
+
+OBJECTS=$(_SOURCES:.F90=.o)
+
+solver: $(EXECUTABLE) 
+	@echo $(SOURCE_DIR_ALL)
+$(EXECUTABLE):  $(OBJECTS) # main.F90
+	$(FC) $(CFLAGS) $^ -o $@
+
+%.o: %.F90
+	$(FC) -c $(CFLAGS) $< -o $@
+
+include $(SOURCE_DIR)/inc_Makefile_dep
+io.o: grid.o global.o utils.o wall_refinement.o debug.o
+grid.o: global.o debug.o
+init.o: global.o grid.o edge_stress.o debug.o
+wall_refinement.o: global.o utils.o debug.o
+edge_stress.o: global.o utils.o wall_refinement.o debug.o
+utils.o: global.o
+debug.o: global.o
+    	
+.PHONY: clean solver
+
+clean:
+	@rm -vf $(EXECUTABLE) *.o *.mod $(SOURCE_DIR)/*~
+	@rm -vrf ../*~
+
+debug: CFLAGS += -DDEBUG 
+debug: solver
